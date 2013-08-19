@@ -1,0 +1,8 @@
+# English Language translations
+# Note: you can specify a localised site image for Facebook and Twitter's use
+
+views:
+  root:
+    site_map:
+      title: Site Map
+      heading: Site Map

@@ -1,0 +1,115 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    activemodel (3.2.14)
+      activesupport (= 3.2.14)
+      builder (~> 3.0.0)
+    activerecord (3.2.14)
+      activemodel (= 3.2.14)
+      activesupport (= 3.2.14)
+      arel (~> 3.0.2)
+      tzinfo (~> 0.3.29)
+    activesupport (3.2.14)
+      i18n (~> 0.6, >= 0.6.4)
+      multi_json (~> 1.0)
+    arel (3.0.2)
+    backports (3.3.3)
+    bcrypt-ruby (3.1.1)
+    builder (3.0.4)
+    commonjs (0.2.6)
+    daemons (1.1.9)
+    eventmachine (1.0.3)
+    hike (1.2.3)
+    i18n (0.6.4)
+    less (2.3.2)
+      commonjs (~> 0.2.6)
+    libv8 (3.11.8.17)
+    mail (2.5.4)
+      mime-types (~> 1.16)
+      treetop (~> 1.4.8)
+    mime-types (1.24)
+    minitest (5.0.6)
+    multi_json (1.7.9)
+    pg (0.16.0)
+    polyglot (0.3.3)
+    pony (1.5)
+      mail (> 2.0)
+    r18n-core (1.1.5)
+    rack (1.5.2)
+    rack-flash3 (1.0.3)
+      rack
+      rack
+    rack-protection (1.5.0)
+      rack
+    rack-test (0.6.2)
+      rack (>= 1.0)
+    rake (10.1.0)
+    ref (1.0.5)
+    simplecov (0.7.1)
+      multi_json (~> 1.0)
+      simplecov-html (~> 0.7.1)
+    simplecov-html (0.7.1)
+    sinatra (1.4.3)
+      rack (~> 1.4)
+      rack-protection (~> 1.4)
+      tilt (~> 1.3, >= 1.3.4)
+    sinatra-contrib (1.4.0)
+      backports (>= 2.0)
+      eventmachine
+      rack-protection
+      rack-test
+      sinatra (~> 1.4.2)
+      tilt (~> 1.3)
+    sinatra-partial (0.4.0)
+      sinatra
+    sinatra-r18n (1.1.5)
+      r18n-core (= 1.1.5)
+      sinatra (>= 1.3)
+    slim (2.0.1)
+      temple (~> 0.6.6)
+      tilt (>= 1.3.3, < 2.1)
+    sprockets (2.10.0)
+      hike (~> 1.2)
+      multi_json (~> 1.0)
+      rack (~> 1.0)
+      tilt (~> 1.1, != 1.3.0)
+    temple (0.6.6)
+    therubyracer (0.11.4)
+      libv8 (~> 3.11.8.12)
+      ref
+    thin (1.5.1)
+      daemons (>= 1.0.9)
+      eventmachine (>= 0.12.6)
+      rack (>= 1.0.0)
+    tilt (1.4.1)
+    treetop (1.4.14)
+      polyglot
+      polyglot (>= 0.3.1)
+    tzinfo (0.3.37)
+    xml-sitemap (1.3.2)
+      builder (>= 2.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  activerecord (~> 3.2.14)
+  activesupport
+  bcrypt-ruby
+  less
+  minitest
+  pg
+  pony
+  rack-flash3
+  rack-test
+  rake
+  simplecov
+  sinatra
+  sinatra-contrib
+  sinatra-partial
+  sinatra-r18n
+  slim
+  sprockets
+  therubyracer
+  thin
+  xml-sitemap

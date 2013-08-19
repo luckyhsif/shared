@@ -1,0 +1,21 @@
+# config/app-info.yml
+# Change this to suit your needs
+
+author: Interactive Gaming Entertainment Pty Ltd
+domain: to_be_supplied.com
+host: www.to_be_supplied.com
+og:
+  type: website
+twitter:
+  card: summary
+  site: '@igecorporate'
+  creator: '@igecorporate'
+icons:
+  i144: /images/icons/ige_aa_iOS_icon_144.png
+  i114: /images/icons/ige_aa_iOS_icon_114.png
+  i72: /images/icons/ige_aa_iOS_icon_72.png
+  i57: /images/icons/ige_aa_iOS_icon_57.png
+  favicon: /favicon.ico
+email:
+  no_reply: '"IGE Corporate" <no-reply@to_be_supplied.com>'
+  notification: '"IGE Corporate - Enquiries" <contact@to_be_supplied.com>'

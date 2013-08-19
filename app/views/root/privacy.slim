@@ -1,0 +1,11 @@
+.container
+  .panel.panel-primary
+    .panel-heading
+      h2.panel-title = t.views.root.privacy.heading
+    .panel-body
+      -for para in t.views.root.privacy.text.translation_keys
+        p=t.views.root.privacy.text[para]
+      -for sect in t.views.root.privacy.section.translation_keys
+        h3=t.views.root.privacy.section[sect].heading
+        -for para in t.views.root.privacy.section[sect].text.translation_keys
+          p=t.views.root.privacy.section[sect].text[para]
