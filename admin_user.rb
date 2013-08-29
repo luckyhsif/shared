@@ -5,3 +5,15 @@ class AdminUser < ActiveRecord::Base
   devise :database_authenticatable, 
          :recoverable, :rememberable, :trackable, :validatable
 end
+
+class Player < AdminUser
+  belongs_to :location
+end
+
+class Employee < AdminUser
+  belongs_to :location
+end
+
+class Agent < AdminUser
+  belongs_to :location
+end

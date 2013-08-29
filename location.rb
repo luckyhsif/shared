@@ -3,7 +3,10 @@ class Location < ActiveRecord::Base
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
   has_many :children, class_name: 'Location', foreign_key: :parent_id
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self
-  
+  has_many :players
+  has_many :employees
+  has_one :agent
+
   def root
     # return the root location, ie the parent at the top (bottom?) of the Location heirarchy
     return self if self.parent == nil
