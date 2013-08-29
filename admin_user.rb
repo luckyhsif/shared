@@ -17,3 +17,16 @@ end
 class Agent < AdminUser
   belongs_to :location
 end
+
+class RegionalDistributor < AdminUser
+  has_many :locations, inverse_of: :regional_distributor
+end
+
+class MasterDistributor < AdminUser
+  has_many :locations, inverse_of: :master_distributor
+end
+
+class CountryDistributor < AdminUser
+  has_many :locations, inverse_of: :country_distributor
+end
+
