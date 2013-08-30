@@ -6,9 +6,9 @@ class Location < ActiveRecord::Base
   has_many :players
   has_many :employees
   has_one :agent
-  has_one :regional_distributor
-  has_one :master_distributor
-  has_one :country_distributor
+  belongs_to :regional_distributor
+  belongs_to :master_distributor
+  belongs_to :country_distributor
 
   def root
     # return the root location, ie the parent at the top (bottom?) of the Location heirarchy
