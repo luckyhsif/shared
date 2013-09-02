@@ -4,6 +4,8 @@ class AdminUser < ActiveRecord::Base
   # :lockable, :timeoutable and :omniauthable
   devise :database_authenticatable, 
          :recoverable, :rememberable, :trackable, :validatable
+  
+  has_and_belongs_to_many :permissions, foreign_key: :user_id
 
 end
 
