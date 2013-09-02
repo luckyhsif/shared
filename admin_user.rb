@@ -9,6 +9,14 @@ class AdminUser < ActiveRecord::Base
   has_and_belongs_to_many :received_messages, class_name: 'Message', foreign_key: :recipient_id
   has_many :messages, foreign_key: :sender_id
 
+  def is_allowed?(perm_name)
+    p = Permission.find_by_name(perm_name)
+    return false if p.nil?
+    # huh? http://api.rubyonrails.org/classes/ActiveRecord/Associations/CollectionProxy.html#method-i-include-3F
+    # TODO: find out why this is returning a '1' or nil, not true or false.
+    return !self.permissions.include?(p).nil?
+  end
+
 end
 
 class Player < AdminUser
