@@ -31,6 +31,8 @@ class Player < AdminUser
   belongs_to :location
 
   def deposit_cash(amount, currency = Account::DEFAULT_CURRENCY)
+    # who is requesting the action? employees or agents and do they have permission to
+    # let the player deposit cash?
     agent = self.location.agent
     note = 'cash deposit'
     Interaction.transaction do |t|
@@ -48,6 +50,8 @@ class Player < AdminUser
   end
 
   def withdraw_cash(amount, currency = Account::DEFAULT_CURRENCY)
+    # who is requesting the action? employees or agents and do they have permission to
+    # let the player withdraw cash?
     agent = self.location.agent
     note = 'cash withdrawal'
     Interaction.transaction do |t|
@@ -71,6 +75,20 @@ end
 
 class Agent < AdminUser
   belongs_to :location
+  
+  def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
+    # who is requesting the action? employees or agents and do they have permission to
+    # issue a bonus to a player?
+    note = "Issued Bonus of #{currency} #{amount}"
+    Interaction.transaction do |t|
+      my_acc = self.account(:wallet, currency)
+      plr_acc = player.account(:wallet, currency)
+      entries = []
+      entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: plr_acc, credit: amount, currency: currency, note: note)
+      Interaction.create!(note: note, entries: entries)
+    end
+  end
 end
 
 class RegionalDistributor < AdminUser
