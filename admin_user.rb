@@ -8,6 +8,15 @@ class AdminUser < ActiveRecord::Base
   has_and_belongs_to_many :permissions, foreign_key: :user_id
   has_and_belongs_to_many :received_messages, class_name: 'Message', foreign_key: :recipient_id
   has_many :messages, foreign_key: :sender_id
+  has_many :accounts, foreign_key: :owner_id, dependent: :destroy
+
+  def account(name, currency = Account::DEFAULT_CURRENCY)
+    return self.accounts.where(name: name.to_s, currency: currency.to_s).first_or_create
+  end
+
+  def balance(name, currency = Account::DEFAULT_CURRENCY)
+    return account(name, currency).balance
+  end
 
   def is_allowed?(perm_name)
     p = Permission.find_by_name(perm_name)
@@ -16,11 +25,25 @@ class AdminUser < ActiveRecord::Base
     # TODO: find out why this is returning a '1' or nil, not true or false.
     return !self.permissions.include?(p).nil?
   end
-
 end
 
 class Player < AdminUser
   belongs_to :location
+
+  def deposit_cash(amount, currency = Account::DEFAULT_CURRENCY)
+    agent = self.location.agent
+    note = 'cash deposit'
+    LedgerEntry.transaction do |t|
+      my_acc = self.account(:cash, currency)
+      agt_acc = agent.account(:cash, currency)
+      from = LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
+      to = LedgerEntry.create!(account: agt_acc, credit: amount, currency: currency, note: note)
+      my_acc = self.account(:wallet, currency)
+      agt_acc = agent.account(:wallet, currency)
+      from = LedgerEntry.create!(account: agt_acc, debit: amount, currency: currency, note: note)
+      to = LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
+    end
+  end
 end
 
 class Employee < AdminUser
