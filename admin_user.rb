@@ -33,7 +33,7 @@ class Player < AdminUser
   def deposit_cash(amount, currency = Account::DEFAULT_CURRENCY)
     agent = self.location.agent
     note = 'cash deposit'
-    LedgerEntry.transaction do |t|
+    Interaction.transaction do |t|
       my_acc = self.account(:cash, currency)
       agt_acc = agent.account(:cash, currency)
       entries = []
@@ -50,7 +50,7 @@ class Player < AdminUser
   def withdraw_cash(amount, currency = Account::DEFAULT_CURRENCY)
     agent = self.location.agent
     note = 'cash withdrawal'
-    LedgerEntry.transaction do |t|
+    Interaction.transaction do |t|
       my_acc = self.account(:cash, currency)
       agt_acc = agent.account(:cash, currency)
       entries = []
