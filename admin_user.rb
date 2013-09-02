@@ -44,6 +44,21 @@ class Player < AdminUser
       to = LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
     end
   end
+
+  def withdraw_cash(amount, currency = Account::DEFAULT_CURRENCY)
+    agent = self.location.agent
+    note = 'cash withdrawal'
+    LedgerEntry.transaction do |t|
+      my_acc = self.account(:cash, currency)
+      agt_acc = agent.account(:cash, currency)
+      from = LedgerEntry.create!(account: agt_acc, debit: amount, currency: currency, note: note)
+      to = LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
+      my_acc = self.account(:wallet, currency)
+      agt_acc = agent.account(:wallet, currency)
+      from = LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
+      to = LedgerEntry.create!(account: agt_acc, credit: amount, currency: currency, note: note)
+    end
+  end
 end
 
 class Employee < AdminUser
