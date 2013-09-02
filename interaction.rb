@@ -13,7 +13,10 @@ class Interaction < ActiveRecord::Base
   protected
   
   def entries_must_sum_to_zero
-    if balance != 0
+    if self.entries.count.odd?
+      errors.add(:entries, "There must be an even number of entries.")
+    end
+    if self.balance != 0
       errors.add(:entries, "Entries must sum to zero.")
     end
   end
