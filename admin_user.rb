@@ -29,6 +29,7 @@ end
 
 class Player < AdminUser
   belongs_to :location
+  validates_presence_of :location
 
   def deposit_cash(amount, currency = Account::DEFAULT_CURRENCY)
     # who is requesting the action? employees or agents and do they have permission to
@@ -71,11 +72,27 @@ end
 
 class Employee < AdminUser
   belongs_to :location
+  belongs_to :employer, class_name: 'Agent'
+  
+  validates_presence_of :location
+  before_validation :assign_employer
+  
+  protected
+  
+  def assign_employer
+    if self.location.agent.nil?
+      errors.add(:location, "An Employee's Location must have an Agent.")
+    else
+      self.employer = self.location.agent if self.employer.nil?
+    end
+  end
 end
 
 class Agent < AdminUser
   belongs_to :location
-  
+  validates_presence_of :location
+  has_many :employees, foreign_key: :employer_id
+
   def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
     # who is requesting the action? employees or agents and do they have permission to
     # issue a bonus to a player?
@@ -93,13 +110,33 @@ end
 
 class RegionalDistributor < AdminUser
   has_many :locations, inverse_of: :regional_distributor
+  validate :has_a_location
+  protected
+  def has_a_location
+    if self.locations.empty?
+      errors.add(:location, "RegionalDistributor must have at least one Location.")
+    end
+  end
 end
 
 class MasterDistributor < AdminUser
   has_many :locations, inverse_of: :master_distributor
+  validate :has_a_location
+  protected
+  def has_a_location
+    if self.locations.empty?
+      errors.add(:location, "MasterDistributor must have at least one Location.")
+    end
+  end
 end
 
 class CountryDistributor < AdminUser
   has_many :locations, inverse_of: :country_distributor
+  validate :has_a_location
+  protected
+  def has_a_location
+    if self.locations.empty?
+      errors.add(:location, "CountryDistributor must have at least one Location.")
+    end
+  end
 end
-
