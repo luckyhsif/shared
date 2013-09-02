@@ -3,5 +3,5 @@ class LedgerEntry < ActiveRecord::Base
   validates_presence_of :currency
   validates_numericality_of :credit, :greater_than_or_equal_to => 0.0
   validates_numericality_of :debit, :greater_than_or_equal_to => 0.0
- 
+  belongs_to :interaction
 end

@@ -36,12 +36,14 @@ class Player < AdminUser
     LedgerEntry.transaction do |t|
       my_acc = self.account(:cash, currency)
       agt_acc = agent.account(:cash, currency)
-      from = LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
-      to = LedgerEntry.create!(account: agt_acc, credit: amount, currency: currency, note: note)
+      entries = []
+      entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: agt_acc, credit: amount, currency: currency, note: note)
       my_acc = self.account(:wallet, currency)
       agt_acc = agent.account(:wallet, currency)
-      from = LedgerEntry.create!(account: agt_acc, debit: amount, currency: currency, note: note)
-      to = LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: agt_acc, debit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
+      Interaction.create!(note: note, entries: entries)
     end
   end
 
@@ -51,12 +53,14 @@ class Player < AdminUser
     LedgerEntry.transaction do |t|
       my_acc = self.account(:cash, currency)
       agt_acc = agent.account(:cash, currency)
-      from = LedgerEntry.create!(account: agt_acc, debit: amount, currency: currency, note: note)
-      to = LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
+      entries = []
+      entries << LedgerEntry.create!(account: agt_acc, debit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
       my_acc = self.account(:wallet, currency)
       agt_acc = agent.account(:wallet, currency)
-      from = LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
-      to = LedgerEntry.create!(account: agt_acc, credit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: agt_acc, credit: amount, currency: currency, note: note)
+      Interaction.create!(note: note, entries: entries)
     end
   end
 end
