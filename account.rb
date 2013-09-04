@@ -1,9 +1,11 @@
+require_relative 'user'
+
 class Account < ActiveRecord::Base
   DEFAULT_CURRENCY = 'EUR'
 
   belongs_to :owner, class_name: 'User'
   validates_presence_of :name
-  validates_uniqueness_of :name, scope: [:owner, :currency]
+  validates_uniqueness_of :name, scope: [:owner_id, :currency]
   has_many :ledger_entries, dependent: :destroy
   
   def balance
