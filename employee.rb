@@ -1,3 +1,5 @@
+require_relative 'user'
+
 class Employee < User
   belongs_to :location
   belongs_to :employer, class_name: 'Agent'

@@ -1,3 +1,5 @@
+require_relative 'user'
+
 class Player < User
   belongs_to :location
   validates_presence_of :location

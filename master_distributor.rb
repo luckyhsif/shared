@@ -1,3 +1,5 @@
+require_relative 'user'
+
 class MasterDistributor < User
   has_many :locations, inverse_of: :master_distributor
   validate :has_a_location, :may_not_have_same_location

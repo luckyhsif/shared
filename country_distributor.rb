@@ -1,3 +1,5 @@
+require_relative 'user'
+
 class CountryDistributor < User
   has_many :locations, inverse_of: :country_distributor
   validate :has_a_location, :may_not_have_same_location
