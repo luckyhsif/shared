@@ -1,4 +1,8 @@
 class Location < ActiveRecord::Base
+  include ActiveModel::Dirty
+
+  define_attribute_methods :parent
+
   validates_uniqueness_of :name
   validates_presence_of :address
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
@@ -10,6 +14,19 @@ class Location < ActiveRecord::Base
   belongs_to :regional_distributor
   belongs_to :master_distributor
   belongs_to :country_distributor
+
+  def parent
+    @parent
+  end
+
+  def parent=(val)
+    previous_parent = self.parent_was
+    if !(self.parent_was == nil)
+      errors.add(self, "Can't remove parent") unless self.parent_was == self.parent  
+      return false
+    end
+    @parent = val
+  end
 
   def root
     # return the root location, ie the parent at the top (bottom?) of the Location heirarchy
@@ -23,7 +40,7 @@ class Location < ActiveRecord::Base
   end
 
   def parent_may_not_be_a_circular_reference
-    if parent == self
+    if (self.parent == self) || (!(self.parent == nil) && (self.parent.parent == self))
       errors.add(:parent, "Can't be self")
     end
   end
