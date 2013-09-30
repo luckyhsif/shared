@@ -24,6 +24,11 @@ class Location < ActiveRecord::Base
     return Location.where("parent_id is NULL")
   end
 
+  def valid_parent?(parent_to_be)
+    tree = self.leaves
+    return tree.include(parent_to_be)
+  end
+
   def parent_may_not_be_a_circular_reference
     if (self.parent == self) || (!(self.parent == nil) && (self.parent.parent == self))
       errors.add(:parent, "Can't be self")
