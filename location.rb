@@ -2,7 +2,7 @@ class Location < ActiveRecord::Base
   include ActiveModel::Dirty
 
   validates_uniqueness_of :name
-  validates_presence_of :address
+  # validates_presence_of :address
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
   has_many :children, class_name: 'Location', foreign_key: :parent_id
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self
