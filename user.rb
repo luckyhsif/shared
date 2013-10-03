@@ -9,7 +9,6 @@ class User < ActiveRecord::Base
   validates_presence_of :email
   validates_uniqueness_of :email
 
-
  # include BCrypt
   def password
     @password ||= BCrypt::Password.new(password_hash) # using bcrypt
@@ -38,6 +37,20 @@ class User < ActiveRecord::Base
     # huh? http://api.rubyonrails.org/classes/ActiveRecord/Associations/CollectionProxy.html#method-i-include-3F
     # TODO: find out why this is returning a '1' or nil, not true or false.
     return !self.permissions.include?(p).nil?
+  end
+
+  def is_active?
+    return self.active
+  end
+
+  def adjust_logons(succeeded = true)
+    return unless self.active
+    if succeeded 
+      self.failed_logons = 0 if self.failed_logons > 0
+    else
+      self.failed_logons -= 1
+      self.active = false if self.failed_logons > 5
+    end
   end
 
 end
