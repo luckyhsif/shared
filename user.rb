@@ -20,7 +20,10 @@ class User < ActiveRecord::Base
   end
 
   def authenticate(clear_text_password)
-    return password == clear_text_password
+    # puts "DEBUGGING: self.active = #{self.active}"
+    # puts "DEBUGGING: passwords match = #{(password == clear_text_password)}"
+    # puts "DEBUGGING: authenticated? #{self.active && (password == clear_text_password)}"
+    return self.active && (password == clear_text_password)
   end
 
   def account(name, currency = Account::DEFAULT_CURRENCY)
@@ -48,7 +51,7 @@ class User < ActiveRecord::Base
     if succeeded 
       self.failed_logons = 0 if self.failed_logons > 0
     else
-      self.failed_logons -= 1
+      self.failed_logons += 1
       self.active = false if self.failed_logons > 5
     end
   end
