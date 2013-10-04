@@ -47,7 +47,7 @@ class User < ActiveRecord::Base
   end
 
   def adjust_logons(succeeded = true)
-    return unless self.active
+    return true unless self.active
     if succeeded 
       self.failed_logons = 0 if self.failed_logons > 0
     else
