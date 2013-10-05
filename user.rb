@@ -26,6 +26,12 @@ class User < ActiveRecord::Base
     return self.active && (password == clear_text_password)
   end
 
+  def valid_password_change?(old_pw, nominated_pw, pw_confirmation)
+    return false unless self.authenticate(old_pw)
+    return false if old_pw == nominated_pw
+    return nominated_pw == pw_confirmation
+  end
+
   def account(name, currency = Account::DEFAULT_CURRENCY)
     return self.accounts.where(name: name.to_s, currency: currency.to_s).first_or_create
   end
@@ -44,6 +50,10 @@ class User < ActiveRecord::Base
 
   def is_active?
     return self.active
+  end
+
+  def password_reset_required?
+    return self.password_reset_required
   end
 
   def adjust_logons(succeeded = true)
