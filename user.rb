@@ -52,6 +52,10 @@ class User < ActiveRecord::Base
     return self.active
   end
 
+  def block_player
+    self.active = false
+  end
+
   def password_reset_required?
     return self.password_reset_required
   end
