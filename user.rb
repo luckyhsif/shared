@@ -56,6 +56,14 @@ class User < ActiveRecord::Base
     self.active = false
   end
 
+  def unblock_player
+    self.active = true
+  end
+
+  def success_enquiry_for(wanted_user)
+    return true   # incomplete
+  end
+
   def password_reset_required?
     return self.password_reset_required
   end
