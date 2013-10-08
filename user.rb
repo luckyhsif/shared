@@ -1,13 +1,18 @@
 class User < ActiveRecord::Base
-  
+
   has_and_belongs_to_many :permissions, foreign_key: :user_id
   has_and_belongs_to_many :received_messages, class_name: 'Message', foreign_key: :recipient_id
   has_many :messages, foreign_key: :sender_id
   has_many :accounts, foreign_key: :owner_id, dependent: :destroy
+
+  email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
+
+  validates :email, :presence   => true,
+                    :format     => { :with => email_regex },
+                    :uniqueness => { :case_sensitive => false }
+  validates :name,  :presence   => true, 
+                    :length     => { :maximum => 50 }
   validates_presence_of :password_hash
-  validates_presence_of :name
-  validates_presence_of :email
-  validates_uniqueness_of :email
 
  # include BCrypt
   def password
@@ -52,20 +57,32 @@ class User < ActiveRecord::Base
     return self.active
   end
 
-  def block_player
+  def block
     self.active = false
   end
 
-  def unblock_player
+  def unblock
     self.active = true
   end
 
-  def success_enquiry_for(wanted_user)
-    return true   # incomplete
+  def user_level(user)
+    case user.type
+    when 'Player' then 1
+    when 'Employee' then 2
+    when 'Agent' then 3
+    when 'RegionalDistributor' then 4
+    when 'MasterDistributor' then 5
+    when 'CountryDistributor' then 6
+    when 'Staff' then 7
+    end
   end
 
-  def password_reset_required?
-    return self.password_reset_required
+  def success_enquiry_for(wanted_user)
+    return false if wanted_user == nil
+    manager_level = user_level(self)
+    subordinate_type = user_level(wanted_user)
+    return false unless self.location == wanted_user.location
+    return manager_level > subordinate_type
   end
 
   def adjust_logons(succeeded = true)
