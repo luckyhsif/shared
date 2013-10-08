@@ -63,6 +63,7 @@ class User < ActiveRecord::Base
 
   def unblock
     self.active = true
+    self.adjust_logons
   end
 
   def user_level(user)
