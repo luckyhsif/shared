@@ -75,6 +75,8 @@ class User < ActiveRecord::Base
     when 'MasterDistributor' then 5
     when 'CountryDistributor' then 6
     when 'Staff' then 7
+    else
+      99
     end
   end
 
