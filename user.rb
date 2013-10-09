@@ -80,12 +80,16 @@ class User < ActiveRecord::Base
     end
   end
 
-  def success_enquiry_for(wanted_user)
+  def allowed_to_enquire_for(wanted_user)
     return false if wanted_user == nil
     manager_level = user_level(self)
     subordinate_type = user_level(wanted_user)
-    return false unless self.location == wanted_user.location
     return manager_level > subordinate_type
+  end
+
+  def same_location_as(user)
+    return false if user == nil
+    return self.location == user.location
   end
 
   def adjust_logons(succeeded = true)
