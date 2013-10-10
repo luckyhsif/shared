@@ -24,6 +24,17 @@ class Location < ActiveRecord::Base
     return Location.where("parent_id is NULL")
   end
 
+  def descendant_locations
+    return nil if self.children == nil
+    return self.first if self.children.length == 1
+    @all_children ||= []
+    @all_children << self
+    for child in self.children
+      @all_children << child.descendant_locations
+    end
+    return @all_children
+  end
+
   def valid_parent?(parent_to_be)
     tree = self.leaves
     return tree.include(parent_to_be)

@@ -87,9 +87,19 @@ class User < ActiveRecord::Base
     return manager_level > subordinate_type
   end
 
-  def same_location_as(user)
+  def includes_location?(user)
     return false if user == nil
-    return self.location == user.location
+    manager_level = user_level(self)
+    subordinate_level = user_level(user)
+    return false unless manager_level > subordinate_level
+    return self.location == user.location if manager_level < 4
+    manager_locations = []
+    for loc in self.locations 
+      manager_locations << loc.descendant_locations
+    end
+    manager_locations = manager_locations.flatten
+    return manager_locations.include? user.location if subordinate_level < 4
+    return manager_locations.include? user.locations.first
   end
 
   def adjust_logons(succeeded = true)

@@ -41,4 +41,31 @@ class Player < User
       Interaction.create!(note: note, entries: entries)
     end
   end
+  
+  def loses_game(amount, currency = Account::DEFAULT_CURRENCY)
+    agent = self.location.agent
+    note = 'player lost game'
+    Interaction.transaction do |t|
+      my_acc = self.account(:wallet, currency)
+      agt_acc = agent.account(:wallet, currency)
+      entries = []        
+      entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: agt_acc, credit: amount, currency: currency, note: note)
+      Interaction.create!(note: note, entries: entries)
+    end
+  end
+    
+  def won_game(amount, currency = Account::DEFAULT_CURRENCY)
+    agent = self.location.agent
+    note = 'player won game'
+    Interaction.transaction do |t|
+      my_acc = self.account(:wallet, currency)
+      agt_acc = agent.account(:wallet, currency)
+      entries = []        
+      entries << LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: agt_acc, debit: amount, currency: currency, note: note)
+      Interaction.create!(note: note, entries: entries)
+    end
+  end
+
 end
