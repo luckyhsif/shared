@@ -26,7 +26,6 @@ class Location < ActiveRecord::Base
 
   def descendant_locations
     return nil if self.children == nil
-    return self.first if self.children.length == 1
     @all_children ||= []
     @all_children << self
     for child in self.children

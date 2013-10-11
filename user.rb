@@ -98,6 +98,10 @@ class User < ActiveRecord::Base
       manager_locations << loc.descendant_locations
     end
     manager_locations = manager_locations.flatten
+    # puts "All manager locations"
+    # for loc in manager_locations
+    #   puts loc.name
+    # end
     return manager_locations.include? user.location if subordinate_level < 4
     return manager_locations.include? user.locations.first
   end
