@@ -26,12 +26,13 @@ class Location < ActiveRecord::Base
 
   def descendant_locations
     return nil if self.children == nil
-    @all_children ||= []
-    @all_children << self
+    all_children = []
     for child in self.children
-      @all_children << child.descendant_locations
+      all_children << child
+      child_locs = child.descendant_locations
+      all_children.push(*child_locs) unless child_locs == nil
     end
-    return @all_children
+    return all_children
   end
 
   def valid_parent?(parent_to_be)

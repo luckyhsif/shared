@@ -80,11 +80,22 @@ class User < ActiveRecord::Base
     end
   end
 
-  def allowed_to_enquire_for(wanted_user)
-    return false if wanted_user == nil
+  def allowed_to_enquire_for(user)
+    return false if user == nil
     manager_level = user_level(self)
-    subordinate_type = user_level(wanted_user)
-    return manager_level > subordinate_type
+    subordinate_level = user_level(user)
+    return manager_level > subordinate_level
+  end
+
+  def manage_locations
+    return nil unless user_level(self) > 3
+    manager_locations = []
+    for loc in self.locations 
+      manager_locations << loc
+      locs = loc.descendant_locations
+      manager_locations.push(*locs) unless locs == nil
+    end
+    return manager_locations
   end
 
   def includes_location?(user)
@@ -95,15 +106,12 @@ class User < ActiveRecord::Base
     return self.location == user.location if manager_level < 4
     manager_locations = []
     for loc in self.locations 
-      manager_locations << loc.descendant_locations
+      manager_locations << loc
+      desc_locs = loc.descendant_locations
+      manager_locations.push(*desc_locs) unless desc_locs == nil
     end
-    manager_locations = manager_locations.flatten
-    # puts "All manager locations"
-    # for loc in manager_locations
-    #   puts loc.name
-    # end
-    return manager_locations.include? user.location if subordinate_level < 4
-    return manager_locations.include? user.locations.first
+    return manager_locations.include?(user.location) if subordinate_level < 4
+    return manager_locations.include?(user.locations.first)
   end
 
   def adjust_logons(succeeded = true)
