@@ -88,7 +88,8 @@ class User < ActiveRecord::Base
   end
 
   def manage_locations
-    return nil unless user_level(self) > 3
+    return [self.location] if user_level(self) < 4
+    #return nil unless user_level(self) > 3
     manager_locations = []
     for loc in self.locations 
       manager_locations << loc
@@ -96,6 +97,18 @@ class User < ActiveRecord::Base
       manager_locations.push(*locs) unless locs == nil
     end
     return manager_locations
+  end
+
+  def manage_players
+    return self.location.players if user_level(self) < 4
+    return Players.all if user_level(self) == 7
+    locations = self.manage_locations
+    puts "manage_players, loc count: #{locations.count}"
+    players = []
+    for location in locations
+      players << location.players
+    end
+    return players
   end
 
   def includes_location?(user)
