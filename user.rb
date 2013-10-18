@@ -66,17 +66,81 @@ class User < ActiveRecord::Base
     self.adjust_logons
   end
 
+  def immediate_subordinates
+    return self.location.players if [2,3].include? user_level(self)
+    return CountryDistributor.all if user_level(self) == 7
+    users = []
+    for location in self.locations
+      for child_loc in location.children
+        case self.type
+          when 'CountryDistributor'
+            users << child_loc.master_distributor if child_loc.master_distributor
+          when 'MasterDistributor'
+            users << child_loc.regional_distributor if child_loc.regional_distributor
+          when 'RegionalDistributor'
+            users << child_loc.agent
+        end
+      end
+    end
+    return users
+  end
+
+  def user_level_name
+    case self.type
+      when 'Player' then 'Player'
+        when 'Employee' then 'Employee'
+        when 'Agent' then 'Agent'
+        when 'RegionalDistributor' then 'Regional Distributor'
+        when 'MasterDistributor' then 'Master Distributor'
+        when 'CountryDistributor' then 'Country Distributor'
+        when 'Staff' then 'Staff Member'
+        else
+          99
+    end
+  end
+
+  def all_subordinates
+    # This method is not completed because this will probably not be necessary
+    return self.location.players if [2,3].include? user_level(self)
+    return User.all if user_level(self) == 7
+    users = []
+    for location in self.locations
+      for master_loc in location.children
+        case self.type
+          when 'CountryDistributor'
+            mds = []
+            rds = []
+            ags = []
+            mds << master_loc.master_distributor if master_loc.master_distributor
+            users.push(*mds)
+            for region_loc in master_loc.children
+              rds << region_loc.regional_distributor if region_loc.regional_distributor
+              users.push(*rds)
+              for agent_loc in region_loc.children
+                ags << agent_loc.agent if agent_loc.agent
+              end
+            end
+          when 'MasterDistributor'
+            users << child_loc.regional_distributor if child_loc.regional_distributor
+          when 'RegionalDistributor'
+            users << child_loc.agent
+        end
+      end
+    end
+    return users
+  end
+
   def user_level(user)
     case user.type
-    when 'Player' then 1
-    when 'Employee' then 2
-    when 'Agent' then 3
-    when 'RegionalDistributor' then 4
-    when 'MasterDistributor' then 5
-    when 'CountryDistributor' then 6
-    when 'Staff' then 7
-    else
-      99
+      when 'Player' then 1
+      when 'Employee' then 2
+      when 'Agent' then 3
+      when 'RegionalDistributor' then 4
+      when 'MasterDistributor' then 5
+      when 'CountryDistributor' then 6
+      when 'Staff' then 7
+      else
+        99
     end
   end
 
