@@ -45,6 +45,18 @@ class User < ActiveRecord::Base
     return account(name, currency).balance
   end
 
+  def location_summary(provider, location, rpt_from, rpt_end)
+    # e.g. If provider is Sports, this method returns a revenue summary line  
+    # for games recorded by Sports at <location> from <rpt_from> until
+    # <rpt_end> for the user, <self>
+  end  
+
+  def location_games(provider, location, rpt_from, rpt_end)
+    # e.g. If provider is Sports, this method returns the list of games  
+    # recorded by Sports at <location> from <rpt_from> until
+    # <rpt_end> for the user, <self> sorted in descending sequence
+  end  
+
   def is_allowed?(perm_name)
     p = Permission.find_by_name(perm_name)
     return false if p.nil?
@@ -67,35 +79,79 @@ class User < ActiveRecord::Base
   end
 
   def immediate_subordinates
-    return self.location.players if [2,3].include? user_level(self)
+    # The immediate subordinates of a Staff Member are always Country Distributors
+    # The immediate subordinates of a Country Distributor may be master distributors
+    #   but not necessarily, or
+    # The immediate subordinates of a Country Distributor may be regional distributors,
+    #   but not necessarily
+    # If neither master distributors nor regional distributors exist, the immediate 
+    #   subordinates of a counter distributors will be agents 
+    return self.location.employees if user_level(self) == 3
+    return self.location.players if user_level(self) == 2
     return CountryDistributor.all if user_level(self) == 7
     users = []
-    for location in self.locations
-      for child_loc in location.children
+    for location in self.locations            # for each md location
+      #puts "md location = #{location.name}"
+      for child_loc in location.children      # for each md child
+        #puts "md child location = #{child_loc.name}"      # Agent loc 1
+        #puts "agent of md child location = #{child_loc.agent.name}"
         case self.type
           when 'CountryDistributor'
-            users << child_loc.master_distributor if child_loc.master_distributor
+            if child_loc.master_distributor
+              users << child_loc.master_distributor 
+            elsif child_loc.regional_distributor
+              users << child_loc.regional_distributor
+            elsif child_loc.agent
+              users << child_loc.agent
+            end
           when 'MasterDistributor'
-            users << child_loc.regional_distributor if child_loc.regional_distributor
+            #puts child_loc.to_json
+            if child_loc.regional_distributor
+              #puts "child_loc.regional_distributor = #{child_loc.regional_distributor.name}"
+              users << child_loc.regional_distributor 
+            elsif child_loc.agent
+              #puts "child_loc.agent = #{child_loc.agent.name}"
+              users << child_loc.agent
+            end              
           when 'RegionalDistributor'
-            users << child_loc.agent
+            users << child_loc.agent if child_loc.agent
+          # when 'Agent'
+          #   for emp in child_loc.employees
+          #     users << emp
+          #   end
+          # when 'Employee'
+          #   for player in child_loc.players
+          #     users << player
+          #   end
         end
       end
     end
     return users
   end
 
+  def subordinate_type
+    case self.type
+      when 'Staff' then 'CountryDistributor'
+      when 'CountryDistributor' then 'MasterDistributor'
+      when 'MasterDistributor' then 'RegionalDistributor'
+      when 'RegionalDistributor' then 'Agent'
+      when 'Agent' then 'Employee'
+      when 'Employee' then 'Player'
+      else nil
+    end  
+  end
+
   def user_level_name
     case self.type
       when 'Player' then 'Player'
-        when 'Employee' then 'Employee'
-        when 'Agent' then 'Agent'
-        when 'RegionalDistributor' then 'Regional Distributor'
-        when 'MasterDistributor' then 'Master Distributor'
-        when 'CountryDistributor' then 'Country Distributor'
-        when 'Staff' then 'Staff Member'
-        else
-          99
+      when 'Employee' then 'Employee'
+      when 'Agent' then 'Agent'
+      when 'RegionalDistributor' then 'Regional Distributor'
+      when 'MasterDistributor' then 'Master Distributor'
+      when 'CountryDistributor' then 'Country Distributor'
+      when 'Staff' then 'Staff Member'
+      else
+        99
     end
   end
 
@@ -177,6 +233,7 @@ class User < ActiveRecord::Base
 
   def includes_location?(user)
     return false if user == nil
+    return true if user_level(self) == 7
     manager_level = user_level(self)
     subordinate_level = user_level(user)
     return false unless manager_level > subordinate_level
