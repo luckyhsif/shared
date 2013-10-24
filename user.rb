@@ -86,45 +86,45 @@ class User < ActiveRecord::Base
     #   but not necessarily
     # If neither master distributors nor regional distributors exist, the immediate 
     #   subordinates of a counter distributors will be agents 
-    return self.location.employees if user_level(self) == 3
+
     return self.location.players if user_level(self) == 2
     return CountryDistributor.all if user_level(self) == 7
     users = []
-    for location in self.locations            # for each md location
-      #puts "md location = #{location.name}"
-      for child_loc in location.children      # for each md child
-        #puts "md child location = #{child_loc.name}"      # Agent loc 1
-        #puts "agent of md child location = #{child_loc.agent.name}"
-        case self.type
-          when 'CountryDistributor'
-            if child_loc.master_distributor
-              users << child_loc.master_distributor 
-            elsif child_loc.regional_distributor
-              users << child_loc.regional_distributor
-            elsif child_loc.agent
-              users << child_loc.agent
-            end
-          when 'MasterDistributor'
-            #puts child_loc.to_json
-            if child_loc.regional_distributor
-              #puts "child_loc.regional_distributor = #{child_loc.regional_distributor.name}"
-              users << child_loc.regional_distributor 
-            elsif child_loc.agent
-              #puts "child_loc.agent = #{child_loc.agent.name}"
-              users << child_loc.agent
-            end              
-          when 'RegionalDistributor'
-            users << child_loc.agent if child_loc.agent
-          # when 'Agent'
-          #   for emp in child_loc.employees
-          #     users << emp
-          #   end
-          # when 'Employee'
-          #   for player in child_loc.players
-          #     users << player
-          #   end
+    case self.type
+      when 'Agent'
+        for location in self.locations
+          for emp in location.employees
+            users << emp if emp
+          end
         end
-      end
+      when 'RegionalDistributor'
+        for location in self.locations
+          for loc in location.children   # loc is an agent location
+            users << loc.agent if loc.agent
+          end
+        end
+      when 'MasterDistributor'
+        for location in self.locations 
+          for loc in location.children   # loc can be a Region Loc or an Agent Loc
+            if loc.regional_distributor  # It is a RD location, so provide a list of RD's
+              users << loc.regional_distributor
+            elsif loc.agent              
+              users << loc.agent
+            end
+          end
+        end
+      when 'CountryDistributor'
+        for location in self.locations   # location is a Country location
+          for loc in location.children   # loc can be a Master Loc, a Region Loc or an Agent Loc
+            if loc.master_distributor    
+              users << loc.master_distributor
+            elsif loc.regional_distributor 
+              users << loc.regional_distributor
+            elsif loc.agent
+              users << loc.agent
+            end
+          end
+        end
     end
     return users
   end
@@ -132,9 +132,22 @@ class User < ActiveRecord::Base
   def subordinate_type
     case self.type
       when 'Staff' then 'CountryDistributor'
-      when 'CountryDistributor' then 'MasterDistributor'
-      when 'MasterDistributor' then 'RegionalDistributor'
-      when 'RegionalDistributor' then 'Agent'
+      when 'CountryDistributor'
+        if self.locations.first.master_distributor
+          return 'MasterDistributor'
+        elsif self.locations.first.regional_distributor
+          return 'RegionalDistributor'
+        elsif self.locations.first.agent
+          return 'Agent'
+        end
+      when 'MasterDistributor'
+        if self.locations.first.regional_distributor
+          return 'RegionalDistributor'
+        elsif self.locations.first.agent
+          return 'Agent'
+        end
+      when 'RegionalDistributor'
+        return 'Agent' if self.locations.first.agent
       when 'Agent' then 'Employee'
       when 'Employee' then 'Player'
       else nil
@@ -208,25 +221,26 @@ class User < ActiveRecord::Base
   end
 
   def manage_locations
-    return [self.location] if user_level(self) < 4
-    #return nil unless user_level(self) > 3
+    return [self.location] if user_level(self) < 3   # player.location or employee.location
     manager_locations = []
-    for loc in self.locations 
+    for loc in self.locations   # if self eq agent then loc is agent loc
       manager_locations << loc
-      locs = loc.descendant_locations
-      manager_locations.push(*locs) unless locs == nil
+      if user_level(self) > 3
+        locs = loc.descendant_locations
+        manager_locations.push(*locs) unless locs == nil
+      end
     end
     return manager_locations
   end
 
   def manage_players
-    return self.location.players if user_level(self) < 4
-    return Players.all if user_level(self) == 7
+    return nil if user_level(self) == 1                    # Can't be a player
+    return self.location.players if user_level(self) == 2  # Players belonging to employee's location
+    return Players.all if user_level(self) == 7            # Staff member manages everybody
     locations = self.manage_locations
-    puts "manage_players, loc count: #{locations.count}"
     players = []
     for location in locations
-      players << location.players
+      players.push(*location.players)
     end
     return players
   end
@@ -237,14 +251,14 @@ class User < ActiveRecord::Base
     manager_level = user_level(self)
     subordinate_level = user_level(user)
     return false unless manager_level > subordinate_level
-    return self.location == user.location if manager_level < 4
+    return self.location == user.location if manager_level < 3
     manager_locations = []
     for loc in self.locations 
       manager_locations << loc
       desc_locs = loc.descendant_locations
       manager_locations.push(*desc_locs) unless desc_locs == nil
     end
-    return manager_locations.include?(user.location) if subordinate_level < 4
+    return manager_locations.include?(user.location) if subordinate_level < 3
     return manager_locations.include?(user.locations.first)
   end
 

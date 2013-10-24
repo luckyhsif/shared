@@ -8,7 +8,7 @@ class Location < ActiveRecord::Base
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self
   has_many :players
   has_many :employees
-  has_one :agent
+  belongs_to :agent
   belongs_to :regional_distributor
   belongs_to :master_distributor
   belongs_to :country_distributor

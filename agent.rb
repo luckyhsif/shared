@@ -1,9 +1,9 @@
 require_relative 'user'
 
 class Agent < User
-  belongs_to :location
-  validates_presence_of :location
+  has_many :locations, inverse_of: :agent
   has_many :employees, foreign_key: :employer_id
+  validate :has_a_location, :may_not_have_same_location
 
   def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
     # who is requesting the action? employees or agents and do they have permission to
@@ -18,4 +18,19 @@ class Agent < User
       Interaction.create!(note: note, entries: entries)
     end
   end
+
+  protected
+  def has_a_location
+    if self.locations.empty?
+      errors.add(:location, "Agent must have at least one Location.")
+    end
+  end
+
+  def may_not_have_same_location
+    agnt_id = self.locations.last 
+      if agnt_id.agent_id != self.id 
+        errors.add(:location, "Shares the same location as another Agent")
+      end
+  end
+
 end
