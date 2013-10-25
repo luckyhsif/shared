@@ -246,20 +246,41 @@ class User < ActiveRecord::Base
   end
 
   def includes_location?(user)
+    # This algorithm determines if the locations belonging to self includes
+    #  the locations belonging to user.
+    # In the case where the manager (self) and the subornates (user) both have
+    #   many locations, the following assumption is made:
+    # If one location of the subordinate falls in the location hierarchy of the
+    #   manager, then all locations of the subordinate will also pass the test
     return false if user == nil
-    return true if user_level(self) == 7
     manager_level = user_level(self)
     subordinate_level = user_level(user)
+    return true if manager_level == 7
+    return false if manager_level == 1
     return false unless manager_level > subordinate_level
-    return self.location == user.location if manager_level < 3
-    manager_locations = []
-    for loc in self.locations 
-      manager_locations << loc
-      desc_locs = loc.descendant_locations
-      manager_locations.push(*desc_locs) unless desc_locs == nil
+    # Pick a subordinate test location
+    case subordinate_level
+      when 3,4,5
+        testloc = user.locations.first
+      when 1,2
+        testloc = user.location
     end
-    return manager_locations.include?(user.location) if subordinate_level < 3
-    return manager_locations.include?(user.locations.first)
+    if [4,5,6].include?(manager_level)
+      manager_locations = []
+      for loc in self.locations 
+        manager_locations << loc
+        desc_locs = loc.descendant_locations
+        manager_locations.push(*desc_locs) unless desc_locs == nil
+      end
+    end
+    case manager_level
+      when 4,5,6
+        return manager_locations.include?(testloc)
+      when 3
+        return self.locations.include?(user.location)
+      when 2
+        return self.location == user.location
+    end
   end
 
   def adjust_logons(succeeded = true)
