@@ -129,30 +129,31 @@ class User < ActiveRecord::Base
     return users
   end
 
-  def subordinate_type
-    case self.type
-      when 'Staff' then 'CountryDistributor'
-      when 'CountryDistributor'
-        if self.locations.first.master_distributor
-          return 'MasterDistributor'
-        elsif self.locations.first.regional_distributor
-          return 'RegionalDistributor'
-        elsif self.locations.first.agent
-          return 'Agent'
-        end
-      when 'MasterDistributor'
-        if self.locations.first.regional_distributor
-          return 'RegionalDistributor'
-        elsif self.locations.first.agent
-          return 'Agent'
-        end
-      when 'RegionalDistributor'
-        return 'Agent' if self.locations.first.agent
-      when 'Agent' then 'Employee'
-      when 'Employee' then 'Player'
-      else nil
-    end  
-  end
+  #def subordinate_type
+    # This is not required anymore!
+    # case self.type
+    #   when 'Staff' then 'CountryDistributor'
+    #   when 'CountryDistributor'
+    #     if self.locations.first.master_distributor
+    #       return 'MasterDistributor'
+    #     elsif self.locations.first.regional_distributor
+    #       return 'RegionalDistributor'
+    #     elsif self.locations.first.agent
+    #       return 'Agent'
+    #     end
+    #   when 'MasterDistributor'
+    #     if self.locations.first.regional_distributor
+    #       return 'RegionalDistributor'
+    #     elsif self.locations.first.agent
+    #       return 'Agent'
+    #     end
+    #   when 'RegionalDistributor'
+    #     return 'Agent' if self.locations.first.agent
+    #   when 'Agent' then 'Employee'
+    #   when 'Employee' then 'Player'
+    #   else nil
+    # end  
+  #end
 
   def user_level_name
     case self.type
