@@ -28,28 +28,32 @@ class Location < ActiveRecord::Base
     return Location.roots
   end
 
-  def self.all_master_locations
-    master_locations = []
-    for cl in Location.country_locations
-      master_locations.push(*cl.children)
-    end
-    return master_locations
+  def self.master_locations(country)
+    return country.children
   end
 
-  def self.all_regional_locations
+  def self.regional_locations(country)
     regional_locations = []
-    for ml in Location.all_master_locations
+    for ml in Location.master_locations(country)
       regional_locations.push(*ml.children)
     end
     return regional_locations
   end
 
-  def self.all_agent_locations
+  def self.agent_locations(country)
     agent_locations = []
-    for rl in Location.all_regional_locations
+    for rl in Location.regional_locations
       agent_locations.push(*rl.children)
     end
     return agent_locations
+  end
+
+  def manager
+    self.country_distributor || self.master_distributor || self.regional_distributor || self.agent || nil
+  end
+
+  def country_location?
+    self.parent == nil
   end
 
   def descendant_locations

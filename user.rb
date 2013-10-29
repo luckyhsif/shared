@@ -14,6 +14,19 @@ class User < ActiveRecord::Base
                     :length     => { :maximum => 50 }
   validates_presence_of :password_hash
 
+
+  def self.available_permissions_for(user)
+    #returns the permissions that may be added to user
+  end
+
+  def self.immediate_manager_of(user)
+    return nil if user == nil || user.type == 'Staff'
+    case user.type
+      when 'Player'
+      else
+    end
+  end
+
  # include BCrypt
   def password
     @password ||= BCrypt::Password.new(password_hash) # using bcrypt
@@ -219,6 +232,19 @@ class User < ActiveRecord::Base
     manager_level = user_level(self)
     subordinate_level = user_level(user)
     return manager_level > subordinate_level
+  end
+
+  def own_locations
+    case self.type
+      when 'Staff'
+        Location.country_locations
+      when 'CountryDistributor', 'MasterDistributor', 'RegionalDistributor', 'Agent'
+        self.locations
+      when 'Employee'
+        self.location
+      else
+        nil
+    end
   end
 
   def manage_locations
