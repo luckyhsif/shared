@@ -107,7 +107,7 @@ class User < ActiveRecord::Base
       when 'Agent'
         for location in self.locations
           for emp in location.employees
-            users << emp if emp
+            users << emp
           end
         end
       when 'RegionalDistributor'
