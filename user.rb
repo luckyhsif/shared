@@ -150,47 +150,6 @@ class User < ActiveRecord::Base
     return users
   end
 
-  #def subordinate_type
-    # This is not required anymore!
-    # case self.type
-    #   when 'Staff' then 'CountryDistributor'
-    #   when 'CountryDistributor'
-    #     if self.locations.first.master_distributor
-    #       return 'MasterDistributor'
-    #     elsif self.locations.first.regional_distributor
-    #       return 'RegionalDistributor'
-    #     elsif self.locations.first.agent
-    #       return 'Agent'
-    #     end
-    #   when 'MasterDistributor'
-    #     if self.locations.first.regional_distributor
-    #       return 'RegionalDistributor'
-    #     elsif self.locations.first.agent
-    #       return 'Agent'
-    #     end
-    #   when 'RegionalDistributor'
-    #     return 'Agent' if self.locations.first.agent
-    #   when 'Agent' then 'Employee'
-    #   when 'Employee' then 'Player'
-    #   else nil
-    # end  
-  #end
-
-  # TODO: do this a a lookup from the R18n system in a helper, not in the model.
-  def user_level_name
-    case self.type
-      when 'Player' then 'Player'
-      when 'Employee' then 'Employee'
-      when 'Agent' then 'Agent'
-      when 'RegionalDistributor' then 'Regional Distributor'
-      when 'MasterDistributor' then 'Master Distributor'
-      when 'CountryDistributor' then 'Country Distributor'
-      when 'Staff' then 'Staff Member'
-      else
-        99
-    end
-  end
-
   def all_subordinates
     # This method is not completed because this will probably not be necessary
     return self.location.players if [2,3].include? user_level(self)
