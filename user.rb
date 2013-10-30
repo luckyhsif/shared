@@ -14,15 +14,23 @@ class User < ActiveRecord::Base
                     :length     => { :maximum => 50 }
   validates_presence_of :password_hash
 
+  LEVELS = [{count: 1, user_type: 'Player'},
+            {count: 2, user_type: 'Employee'},
+            {count: 3, user_type: 'Agent'},
+            {count: 4, user_type: 'RegionalDistributor'},
+            {count: 5, user_type: 'MasterDistributor'},
+            {count: 6, user_type: 'CountryDistributor'},
+            {count: 7, user_type: 'Staff'}]
 
   def self.available_permissions_for(user)
     #returns the permissions that may be added to user
+    return user.permissions
   end
 
   def self.immediate_manager_of(user)
     return nil if user == nil || user.type == 'Staff'
-    case user.type
-      when 'Player'
+    case user.class
+      when Player
       else
     end
   end
@@ -168,6 +176,7 @@ class User < ActiveRecord::Base
     # end  
   #end
 
+  # TODO: do this a a lookup from the R18n system in a helper, not in the model.
   def user_level_name
     case self.type
       when 'Player' then 'Player'
@@ -214,16 +223,11 @@ class User < ActiveRecord::Base
   end
 
   def user_level(user)
-    case user.type
-      when 'Player' then 1
-      when 'Employee' then 2
-      when 'Agent' then 3
-      when 'RegionalDistributor' then 4
-      when 'MasterDistributor' then 5
-      when 'CountryDistributor' then 6
-      when 'Staff' then 7
-      else
-        99
+    begin
+      # see http://stackoverflow.com/questions/2244915/how-do-i-search-within-an-array-of-hashes-by-hash-values-in-ruby
+      return LEVELS.select{ |l| l[:user_type] == user.type}.first[:count]
+    rescue
+      return 0
     end
   end
 
