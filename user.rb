@@ -2,6 +2,7 @@ class User < ActiveRecord::Base
 
   has_and_belongs_to_many :permissions, foreign_key: :user_id
   has_and_belongs_to_many :received_messages, class_name: 'Message', foreign_key: :recipient_id
+  has_and_belongs_to_many :locations
   has_many :messages, foreign_key: :sender_id
   has_many :accounts, foreign_key: :owner_id, dependent: :destroy
 
