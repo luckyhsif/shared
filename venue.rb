@@ -1,6 +1,6 @@
 require_relative 'user'
 
-Class Venue < User
+class Venue < User
 
   validates_presence_of :address
   
