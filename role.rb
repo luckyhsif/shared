@@ -3,6 +3,7 @@ class Role < ActiveRecord::Base
   has_many :permission_rules
   validates :name, :presence   => true,
                    :uniqueness => { :case_sensitive => false }
+  has_many :responsibilities
 
   def is_senior_to?(role)
     while role.parent != nil

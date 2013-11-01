@@ -4,6 +4,7 @@ class Location < ActiveRecord::Base
   validates_uniqueness_of :name
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
   has_many :children, class_name: 'Location', foreign_key: :parent_id
+  has_many :responsibilities
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, :parent_may_not_be_venue
   has_and_belongs_to_many :users
 
