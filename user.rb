@@ -6,7 +6,7 @@ class User < ActiveRecord::Base
   has_many :roles, through: :responsibilities
   has_many :messages, foreign_key: :sender_id
   has_many :responsibilities, foreign_key: :user_id, dependent: :destroy
-  has_many :managers, class_name: 'User', foreign_key: :manager
+  has_many :managers, class_name: 'User', through: :responsibilities, foreign_key: :manager_id
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
 
