@@ -4,7 +4,6 @@ class User < ActiveRecord::Base
   has_and_belongs_to_many :received_messages, class_name: 'Message', foreign_key: :recipient_id
   has_and_belongs_to_many :locations
   has_many :messages, foreign_key: :sender_id
-  has_many :accounts, foreign_key: :owner_id, dependent: :destroy
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
 
@@ -57,14 +56,6 @@ class User < ActiveRecord::Base
     return false unless self.authenticate(old_pw)
     return false if old_pw == nominated_pw
     return nominated_pw == pw_confirmation
-  end
-
-  def account(name, currency = Account::DEFAULT_CURRENCY)
-    return self.accounts.where(name: name.to_s, currency: currency.to_s).first_or_create
-  end
-
-  def balance(name, currency = Account::DEFAULT_CURRENCY)
-    return account(name, currency).balance
   end
 
   def location_summary(provider, location, rpt_from, rpt_end)

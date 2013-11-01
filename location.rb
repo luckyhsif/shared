@@ -2,10 +2,9 @@ class Location < ActiveRecord::Base
   include ActiveModel::Dirty
 
   validates_uniqueness_of :name
-  # validates_presence_of :address
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
   has_many :children, class_name: 'Location', foreign_key: :parent_id
-  validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self
+  validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, :parent_may_not_be_venue
   has_and_belongs_to_many :users
 
   def root
@@ -67,6 +66,8 @@ class Location < ActiveRecord::Base
     return tree.include(parent_to_be)
   end
 
+  private
+
   def parent_may_not_be_a_circular_reference
     if (self.parent == self) || (!(self.parent == nil) && (self.parent.parent == self))
       errors.add(:parent, "Can't be self")
@@ -75,5 +76,9 @@ class Location < ActiveRecord::Base
 
   def child_may_not_be_self
     errors.add(:children, "Can't contain self") if children.include?(self)
+  end
+  
+  def parent_may_not_be_venue
+    errors.add(:parent, "Can't be a Venue") if !parent.nil? && parent.is_a?(Venue)
   end
 end
