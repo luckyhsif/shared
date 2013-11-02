@@ -2,10 +2,10 @@ class User < ActiveRecord::Base
 
   has_and_belongs_to_many :permissions, foreign_key: :user_id
   has_and_belongs_to_many :received_messages, class_name: 'Message', foreign_key: :recipient_id
+  has_many :responsibilities
   has_many :locations, through: :responsibilities
   has_many :roles, through: :responsibilities
   has_many :messages, foreign_key: :sender_id
-  has_many :responsibilities, foreign_key: :user_id, dependent: :destroy
   has_many :managers, class_name: 'User', through: :responsibilities, foreign_key: :manager_id
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
@@ -24,6 +24,20 @@ class User < ActiveRecord::Base
             {count: 5, user_type: 'MasterDistributor'},
             {count: 6, user_type: 'CountryDistributor'},
             {count: 7, user_type: 'Staff'}]
+
+  def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
+    # who is requesting the action? employees or agents and do they have permission to
+    # issue a bonus to a player?
+    note = "Issued Bonus of #{currency} #{amount}"
+    Interaction.transaction do |t|
+      my_acc = self.account(:wallet, currency)
+      plr_acc = player.account(:wallet, currency)
+      entries = []
+      entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: plr_acc, credit: amount, currency: currency, note: note)
+      Interaction.create!(note: note, entries: entries)
+    end
+  end
 
   def self.available_permissions_for(user)
     #returns the permissions that may be added to user
