@@ -108,7 +108,46 @@ class User < ActiveRecord::Base
     self.adjust_logons
   end
 
+  def allocated_locations
+    responsibilities = Responsibility.where("user_id = ?", self)
+    return nil unless responsibilities
+    locations = []
+    responsibilities.each do |r|
+      locations << r.location
+    end
+    return locations
+  end
+  
+  def included_locations
+    immediate_locations = self.allocated_locations
+    all_locations = []
+    all_locations.push(*immediate_locations)
+    immediate_locations.each do |l|
+      dl = l.descendant_locations
+      all_locations.push(*dl)
+    end
+    return all_locations
+  end
+
+  def most_senior_role
+    responsibilities = Responsibility.where("user_id = ?", self)
+    return nil unless responsibilities
+    roles = []
+    responsibilities.each do |r|
+      roles << r.role
+    end
+    highest_role = roles.max { |a,b| a.level <=> b.level}
+  end
+
   def immediate_subordinates
+    responsibilities = Responsibility.where("manager = ?", params[self])
+    s = []
+    responsibilities.each do |r|
+      s << r.user
+    end
+  end
+
+  def immediate_subordinates_old
     # The immediate subordinates of a Staff Member are always Country Distributors
     # The immediate subordinates of a Country Distributor may be master distributors
     #   but not necessarily, or
@@ -199,12 +238,12 @@ class User < ActiveRecord::Base
     end
   end
 
-  def allowed_to_enquire_for(user)
-    return false if user == nil
-    manager_level = user_level(self)
-    subordinate_level = user_level(user)
-    return manager_level > subordinate_level
-  end
+  # def allowed_to_enquire_for(user)
+  #   return false if user == nil
+  #   manager_level = user_level(self)
+  #   subordinate_level = user_level(user)
+  #   return manager_level > subordinate_level
+  # end
 
   def own_locations
     case self.type
