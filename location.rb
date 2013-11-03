@@ -1,14 +1,17 @@
 class Location < ActiveRecord::Base
   include ActiveModel::Dirty
 
-  validates_uniqueness_of :name
+  validates :name, :presence   => true,
+                   :uniqueness => { :case_sensitive => false }
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
   has_many :children, class_name: 'Location', foreign_key: :parent_id
   has_many :responsibilities
   has_many :users, through: :responsibilities
   has_many :roles, through: :responsibilities
-  validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, :parent_may_not_be_venue
+  validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, 
+           :parent_may_not_be_venue
   has_and_belongs_to_many :users
+  before_save :may_not_be_a_parent_in_child_hierarchy
 
   def root
     # return the root location, ie the parent at the top (bottom?) of the Location heirarchy
@@ -43,6 +46,29 @@ class Location < ActiveRecord::Base
       agent_locations.push(*rl.children)
     end
     return agent_locations
+  end
+
+  def may_not_be_a_parent_in_child_hierarchy
+    child = self
+    parent = self.parent
+    if parent
+      loc_ids = child.parent_location_ids
+      if loc_ids.include?(child.id)
+        puts "\n may_not_be_a_parent_in_child_hierarchy"
+        errors.add(:parent, "Child location may not be a parent at the same time")
+      end
+    end
+  end
+
+  def parent_location_ids
+    return nil unless self.parent
+    loc_parents = []
+    parent = self.parent
+    while parent != nil
+      loc_parents << parent.id
+      parent = parent.parent
+    end
+    return loc_parents
   end
 
   def manager
