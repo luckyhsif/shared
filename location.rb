@@ -8,9 +8,9 @@ class Location < ActiveRecord::Base
   has_many :responsibilities
   has_many :users, through: :responsibilities
   has_many :roles, through: :responsibilities
+  has_and_belongs_to_many :users
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, 
            :parent_may_not_be_venue
-  has_and_belongs_to_many :users
   before_save :may_not_be_a_parent_in_child_hierarchy
 
   def root
