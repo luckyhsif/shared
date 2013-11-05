@@ -10,7 +10,7 @@ class Location < ActiveRecord::Base
   has_many :roles, through: :responsibilities
   has_and_belongs_to_many :users
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, 
-           :parent_may_not_be_venue
+            :parent_may_not_be_venue
   before_save :may_not_be_a_parent_in_child_hierarchy
 
   def root
@@ -46,18 +46,6 @@ class Location < ActiveRecord::Base
       agent_locations.push(*rl.children)
     end
     return agent_locations
-  end
-
-  def may_not_be_a_parent_in_child_hierarchy
-    child = self
-    parent = self.parent
-    if parent
-      loc_ids = child.parent_location_ids
-      if loc_ids.include?(child.id)
-        puts "\n may_not_be_a_parent_in_child_hierarchy"
-        errors.add(:parent, "Child location may not be a parent at the same time")
-      end
-    end
   end
 
   def parent_location_ids
@@ -96,6 +84,18 @@ class Location < ActiveRecord::Base
   end
 
   private
+
+  def may_not_be_a_parent_in_child_hierarchy
+    child = self
+    parent = self.parent
+    if parent
+      loc_ids = child.parent_location_ids
+      if loc_ids.include?(child.id)
+        puts "\n may_not_be_a_parent_in_child_hierarchy"
+        errors.add(:parent, "Child location may not be a parent at the same time")
+      end
+    end
+  end
 
   def parent_may_not_be_a_circular_reference
     if (self.parent == self) || (!(self.parent == nil) && (self.parent.parent == self))

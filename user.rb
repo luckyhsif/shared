@@ -9,7 +9,6 @@ class User < ActiveRecord::Base
   has_many :managers, class_name: 'User', through: :responsibilities, foreign_key: :manager_id
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
-
   validates :email, :presence   => true,
                     :format     => { :with => email_regex },
                     :uniqueness => { :case_sensitive => false }
@@ -39,17 +38,119 @@ class User < ActiveRecord::Base
     end
   end
 
-  def self.available_permissions_for(user)
-    #returns the permissions that may be added to user
-    return user.permissions
+  def available_permissions
+    #returns the permissions for the current user
+    return self.permissions
   end
 
-  def self.immediate_manager_of(user)
-    return nil if user == nil || user.type == 'Staff'
-    case user.class
-      when Player
+  def manager_for_role(role)   # not used - unsure about this
+    responsibilities = Responsibility.find_by_sql ["SELECT manager_id FROM responsibilities r WHERE r.role_id = ? AND r.user_id = ?", role.id, self.id]
+    return nil if responsibilities.count == 0
+    manager = User.find_by_id(responsibilities.first.manager_id)
+    return manager
+  end
+
+  def agent_of_employee
+    employee_role = Role.find_by_name('Employee')
+    rlist = Responsibility.find_by_sql ["SELECT venue_id FROM responsibilities r WHERE r.role_id = ?", employee_role.id]
+    return rlist.count > 0
+    venue_id = rlist.first.user_id
+    agent_role = Role.find_by_name('Agent')
+    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", agent_role.id, venue_id]
+    return false if rlist.count == 0
+    agent = User.find_by_id(rlist.first.user_id)
+    return agent
+  end
+
+  def is_employee?
+    employee_role = Role.find_by_name('Employee')
+    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ?", employee_role.id]
+    return rlist.count > 0
+  end
+
+  def allowed_to_maintain?(user)
+    # is employee allowed to maintain player?
+    # if self is employee then user must be a player
+    puts "\n Testing allowed_to_maintain?"
+    puts "\n Manager: #{self.name}"       # Employee
+    puts "\n Subordinate: #{user.name}"   # Player
+    return false if self.type == 'Player'
+    subordinate = user
+    if self.is_employee?                      # true
+      if user.type == 'Player'
+         # If employee and player have the same venue the answer is true
       else
+        return false
+      end
     end
+    # self is agent or senior
+    # subordinate can be anything
+    # if self is agent
+    #    if user is player or employee
+    #        agent venues must include player venue or employee venue
+    #    elsif user is agent
+    #        not allowed
+    #    end
+    # end 
+
+    subordinate = subordinate.agent_of_employee 
+    managers = self.managers
+    return managers.include?(subordinate)
+  end
+
+  def managers       #tested
+    # Return all the managers for the current user
+    managers = []
+    if self.type == 'Player'
+      subordinate = self
+      venue = subordinate.venue
+      agent_role = Role.find_by_name('Agent')
+      rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", agent_role.id, venue.id]
+      return nil if rlist.count == 0
+      agent = User.find_by_id(rlist.first.user_id)
+      return nil if agent == nil
+      managers << agent
+      subordinate = agent
+    end
+    rlist = Responsibility.find_by_sql ["SELECT manager_id FROM responsibilities r WHERE r.user_id = ?", self.id]
+    return managers if rlist.count == 0
+    rlist.each do |r|
+      if r.manager_id != nil
+        manager = User.find_by_id(r.manager_id)
+        managers << manager
+        managers.push(*manager.managers)
+      end
+    end
+    return managers
+  end
+
+  def manager(location)
+    # Returns the immediate manager of the current user
+    puts "Entering User - manager, self: #{self.to_json}"
+    if self.type == 'Player'
+      #role = Role.find_by_name('Agent')   # The role is derived from the responsibility
+      puts "\n User - manager(loc) - It is a Player"
+      responsibilities = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, location.id]
+      # The specified location can have only one Agent
+      # The agent is the manager of the current player
+      manager = User.find_by_id(responsibilities.first.user_id)
+      puts "The player's manager is: #{manager.to_json}"
+    else  # It is a User
+      puts "\n User - manager(loc) - It is a User"
+      responsibilities = Responsibility.find_by_sql ["SELECT id, role_id FROM responsibilities r WHERE r.user_id = ? AND r.location_id = ?", self.id, location.id]
+      # The current user will have one responsibility for these criteria
+      # e.g. user = 'Lisa', role = 'Agent', location = 'Hall 1', manager = 'Greg'
+      #      user = 'Lisa', role = 'RD', location = 'Hall 1', manager = 'George'
+      responsibility = Responsibility.find_by_id(responsibilities.first.id)
+      if !responsibility
+        puts "\n User - manager(loc), unexpected error: no manager"
+        return nil
+      end
+      puts "\n User - manager(loc) - Responsibility: #{responsibility.to_json}"
+      manager = responsibility.manager
+      puts "The user's manager is: #{manager.to_json}"
+    end
+    return manager
   end
 
  # include BCrypt
@@ -118,7 +219,7 @@ class User < ActiveRecord::Base
     return locations
   end
   
-  def included_locations
+  def included_locations    # This is tested but is not used yet
     immediate_locations = self.allocated_locations
     all_locations = []
     all_locations.push(*immediate_locations)
@@ -129,7 +230,7 @@ class User < ActiveRecord::Base
     return all_locations
   end
 
-  def most_senior_role
+  def most_senior_role      # Tested
     responsibilities = Responsibility.where("user_id = ?", self)
     return nil unless responsibilities
     roles = []
@@ -139,97 +240,43 @@ class User < ActiveRecord::Base
     highest_role = roles.max { |a,b| a.level <=> b.level}
   end
 
-  def immediate_subordinates
-    responsibilities = Responsibility.where("manager = ?", params[self])
+  def immediate_subordinates    # Tested
+    # Find all the immediate subordinates of the current user
+    # There may be duplicates in this list
+    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.manager_id = ?", self.id]
+    return nil if rlist.count == 0
     s = []
-    responsibilities.each do |r|
-      s << r.user
+    rlist.each do |r|
+      user = User.find_by_id(r.user_id)
+      s << user
     end
+    s = s.uniq
+    return s
   end
 
-  def immediate_subordinates_old
-    # The immediate subordinates of a Staff Member are always Country Distributors
-    # The immediate subordinates of a Country Distributor may be master distributors
-    #   but not necessarily, or
-    # The immediate subordinates of a Country Distributor may be regional distributors,
-    #   but not necessarily
-    # If neither master distributors nor regional distributors exist, the immediate 
-    #   subordinates of a counter distributors will be agents 
-
-    return self.location.players if user_level(self) == 2
-    return CountryDistributor.all if user_level(self) == 7
-    users = []
-    case self.type
-      when 'Agent'
-        for location in self.locations
-          for emp in location.employees
-            users << emp
-          end
-        end
-      when 'RegionalDistributor'
-        for location in self.locations
-          for loc in location.children   # loc is an agent location
-            users << loc.agent if loc.agent
-          end
-        end
-      when 'MasterDistributor'
-        for location in self.locations 
-          for loc in location.children   # loc can be a Region Loc or an Agent Loc
-            if loc.regional_distributor  # It is a RD location, so provide a list of RD's
-              users << loc.regional_distributor
-            elsif loc.agent              
-              users << loc.agent
-            end
-          end
-        end
-      when 'CountryDistributor'
-        for location in self.locations   # location is a Country location
-          for loc in location.children   # loc can be a Master Loc, a Region Loc or an Agent Loc
-            if loc.master_distributor    
-              users << loc.master_distributor
-            elsif loc.regional_distributor 
-              users << loc.regional_distributor
-            elsif loc.agent
-              users << loc.agent
-            end
-          end
-        end
+  def is_subordinate_of?(user, location)    #  still working on this
+    subordinate = self
+    puts "\n (1) is_subordinate_of? testing self: #{subordinate.to_json}"
+    puts "\n (2) is_subordinate_of? testing manager: #{user.to_json}"
+    if self.type == 'Player'
+      puts "\n 1 is_subordinate_of, venue #{subordinate.venue.to_json}"
+      manager = subordinate.venue.agent
+    else
+      puts "\n 2 is_subordinate_of location: #{location.to_json}"
+      manager = subordinate.manager(location)
     end
-    return users
+    puts "\n self manager: #{manager.to_json}"      # Lisa Agent
+    puts "\n manager: #{user.to_json}"              # Harry Employee
+    while manager != nil
+      return true if manager == user
+      puts "\n manager != user"
+      manager = manager.manager(location)
+      puts "\n Try with manager: #{manager.to_json}"
+    end
+    false
   end
 
-  def all_subordinates
-    # This method is not completed because this will probably not be necessary
-    return self.location.players if [2,3].include? user_level(self)
-    return User.all if user_level(self) == 7
-    users = []
-    for location in self.locations
-      for master_loc in location.children
-        case self.type
-          when 'CountryDistributor'
-            mds = []
-            rds = []
-            ags = []
-            mds << master_loc.master_distributor if master_loc.master_distributor
-            users.push(*mds)
-            for region_loc in master_loc.children
-              rds << region_loc.regional_distributor if region_loc.regional_distributor
-              users.push(*rds)
-              for agent_loc in region_loc.children
-                ags << agent_loc.agent if agent_loc.agent
-              end
-            end
-          when 'MasterDistributor'
-            users << child_loc.regional_distributor if child_loc.regional_distributor
-          when 'RegionalDistributor'
-            users << child_loc.agent
-        end
-      end
-    end
-    return users
-  end
-
-  def user_level(user)
+  def user_level(user)   # A user no longer has a level. Users no have responsibiity levels
     begin
       # see http://stackoverflow.com/questions/2244915/how-do-i-search-within-an-array-of-hashes-by-hash-values-in-ruby
       return LEVELS.select{ |l| l[:user_type] == user.type}.first[:count]
@@ -238,52 +285,44 @@ class User < ActiveRecord::Base
     end
   end
 
-  # def allowed_to_enquire_for(user)
-  #   return false if user == nil
-  #   manager_level = user_level(self)
-  #   subordinate_level = user_level(user)
-  #   return manager_level > subordinate_level
-  # end
-
-  def own_locations
-    case self.type
-      when 'Staff'
-        Location.country_locations
-      when 'CountryDistributor', 'MasterDistributor', 'RegionalDistributor', 'Agent'
-        self.locations
-      when 'Employee'
-        self.location
-      else
-        nil
-    end
-  end
-
   def manage_locations
-    return [self.location] if user_level(self) < 3   # player.location or employee.location
+    #return nil if user_level(self) == 1
+    return nil if self.type == 'Player'
     manager_locations = []
-    for loc in self.locations   # if self eq agent then loc is agent loc
+    for loc in self.locations
       manager_locations << loc
-      if user_level(self) > 3
-        locs = loc.descendant_locations
-        manager_locations.push(*locs) unless locs == nil
-      end
+      locs = loc.descendant_locations
+      manager_locations.push(*locs) unless locs == nil
     end
     return manager_locations
   end
 
-  def manage_players
-    return nil if user_level(self) == 1                    # Can't be a player
-    return self.location.players if user_level(self) == 2  # Players belonging to employee's location
-    return Players.all if user_level(self) == 7            # Staff member manages everybody
-    locations = self.manage_locations
-    players = []
-    for location in locations
-      players.push(*location.players)
-    end
-    return players
-  end
+  # def manage_locations2
+  #   return [self.location] if user_level(self) == 1   # player.location or employee.location
+  #   manager_locations = []
+  #   for loc in self.locations   # if self eq agent then loc is agent loc
+  #     manager_locations << loc
+  #     if user_level(self) > 3
+  #       locs = loc.descendant_locations
+  #       manager_locations.push(*locs) unless locs == nil
+  #     end
+  #   end
+  #   return manager_locations
+  # end
 
-  def includes_location?(user)
+  # def manage_players       
+  #   return nil if user_level(self) == 1                    # Can't be a player
+  #   return self.location.players if user_level(self) == 2  # Players belonging to employee's location
+  #   return Players.all if user_level(self) == 7            # Staff member manages everybody
+  #   locations = self.manage_locations
+  #   players = []
+  #   for location in locations
+  #     players.push(*location.players)
+  #   end
+  #   return players
+  # end
+
+  def includes_location?(user)    # Don't use this to authenticate the current user
     # This algorithm determines if the locations belonging to self includes
     #  the locations belonging to user.
     # In the case where the manager (self) and the subornates (user) both have
