@@ -112,10 +112,7 @@ class User < ActiveRecord::Base
     return agent
   end
 
-  def allowed_to_maintain?(user)
-    # is employee allowed to maintain player?
-    # if self is employee then user must be a player
-    puts "\n Testing allowed_to_maintain?"
+  def allowed_to_maintain?(user)   #tested
     subordinate = user
     manager = self
     return false if subordinate == manager
@@ -127,7 +124,7 @@ class User < ActiveRecord::Base
     # puts "manager role: #{manager_role.name}"
     # puts "Subordinate: #{subordinate.name}"   # Player
     # puts "subordinate role: #{subordinate_role.name}"
-    
+    return true if manager_role.name == 'Staff'
     if manager_role.name == 'Employee' 
       return false unless subordinate_role.name == 'Player'
       #puts "Manager is Employee and Subordinate is Player"
@@ -139,24 +136,12 @@ class User < ActiveRecord::Base
       return manager.agent_employees.include?(subordinate) if subordinate_role.name == 'Employee'
       return false
     end
-
-    # manager is more senior than agent
     if subordinate_role.name == 'Player'
-      puts "Getting the agent for a player"
       subordinate = subordinate.agent_of_player
     elsif subordinate_role.name == 'Employee'
       subordinate = subordinate.agent_of_employee
     end
-    # The subordinate has now change to their managing agent
-    # Is the manager in the managerial line of the subordinate?
-
-    #puts "\n Going on to managers"
     managers = subordinate.managers
-    # puts "Subordinate: #{subordinate.name}"
-    # puts "Manager list:"
-    managers.each do |m|
-      puts m.name
-    end
     return managers.include?(manager)
   end
 
