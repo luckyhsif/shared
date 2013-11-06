@@ -50,11 +50,11 @@ class User < ActiveRecord::Base
     return manager
   end
 
-  def agent_of_employee
+  def agent_of_employee    #tested
     employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.find_by_sql ["SELECT venue_id FROM responsibilities r WHERE r.role_id = ?", employee_role.id]
-    return rlist.count > 0
-    venue_id = rlist.first.user_id
+    rlist = Responsibility.find_by_sql ["SELECT location_id FROM responsibilities r WHERE r.user_id = ? AND r.role_id = ?", self.id, employee_role.id]
+    return false if rlist.count == 0
+    venue_id = rlist.first.location_id
     agent_role = Role.find_by_name('Agent')
     rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", agent_role.id, venue_id]
     return false if rlist.count == 0
@@ -62,40 +62,102 @@ class User < ActiveRecord::Base
     return agent
   end
 
-  def is_employee?
+  def is_employee?   # tested
     employee_role = Role.find_by_name('Employee')
     rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ?", employee_role.id]
     return rlist.count > 0
+  end
+
+  def is_employee_at_venue?(venue)   # tested
+    employee_role = Role.find_by_name('Employee')
+    rlist = Responsibility.find_by_sql ["SELECT id FROM responsibilities r WHERE r.user_id = ? AND r.role_id = ? AND r.location_id = ?", self.id, employee_role.id, venue.id]
+    return rlist.count > 0
+  end
+  
+  def agent_venues    # tested
+    venues = []
+    role = Role.find_by_name('Agent')
+    rlist = Responsibility.find_by_sql ["SELECT location_id FROM responsibilities r WHERE r.user_id = ? AND r.role_id = ?", self.id, role.id]
+    return venues if rlist.count == 0
+    rlist.each do |r|
+      venue = Venue.find_by_id(r.location_id)
+      venues << r.location
+    end
+    return venues
+  end
+
+  def agent_employees    # tested
+    employees = []
+    agent_role = Role.find_by_name('Agent')
+    employee_role = Role.find_by_name('Employee')
+    alist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.user_id = ? AND r.role_id = ?", self.id, agent_role.id]
+    return employees if alist.count == 0
+    alist.each do |a|
+      elist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.manager_id = ?", employee_role.id, a.user_id]
+      elist.each do |e|
+        employee = User.find_by_id(e.user_id)
+        employees << employee
+      end
+    end
+    return employees
+  end
+
+  def agent_of_player    # tested
+    return nil unless self.type == 'Player'
+    venue = self.venue
+    agent_role = Role.find_by_name('Agent')
+    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", agent_role.id, venue.id]
+    return nil if rlist.count == 0
+    agent = User.find_by_id(rlist.first.user_id)
+    return agent
   end
 
   def allowed_to_maintain?(user)
     # is employee allowed to maintain player?
     # if self is employee then user must be a player
     puts "\n Testing allowed_to_maintain?"
-    puts "\n Manager: #{self.name}"       # Employee
-    puts "\n Subordinate: #{user.name}"   # Player
-    return false if self.type == 'Player'
     subordinate = user
-    if self.is_employee?                      # true
-      if user.type == 'Player'
-         # If employee and player have the same venue the answer is true
-      else
-        return false
-      end
+    manager = self
+    return false if subordinate == manager
+    return false if manager.type == 'Player'
+    manager_role = manager.most_senior_role
+    subordinate_role = subordinate.most_senior_role
+    # puts "\n Subordinate role: #{subordinate_role.to_json}"
+    # puts "Manager: #{manager.name}"       # Employee
+    # puts "manager role: #{manager_role.name}"
+    # puts "Subordinate: #{subordinate.name}"   # Player
+    # puts "subordinate role: #{subordinate_role.name}"
+    
+    if manager_role.name == 'Employee' 
+      return false unless subordinate_role.name == 'Player'
+      #puts "Manager is Employee and Subordinate is Player"
+      return subordinate.venue.has_employee?(manager)
     end
-    # self is agent or senior
-    # subordinate can be anything
-    # if self is agent
-    #    if user is player or employee
-    #        agent venues must include player venue or employee venue
-    #    elsif user is agent
-    #        not allowed
-    #    end
-    # end 
+    # manager is agent or senior; subordinate can be anyone
+    if manager_role.name == 'Agent'
+      return manager.agent_venues.include?(subordinate.venue) if subordinate_role.name == 'Player'
+      return manager.agent_employees.include?(subordinate) if subordinate_role.name == 'Employee'
+      return false
+    end
 
-    subordinate = subordinate.agent_of_employee 
-    managers = self.managers
-    return managers.include?(subordinate)
+    # manager is more senior than agent
+    if subordinate_role.name == 'Player'
+      puts "Getting the agent for a player"
+      subordinate = subordinate.agent_of_player
+    elsif subordinate_role.name == 'Employee'
+      subordinate = subordinate.agent_of_employee
+    end
+    # The subordinate has now change to their managing agent
+    # Is the manager in the managerial line of the subordinate?
+
+    #puts "\n Going on to managers"
+    managers = subordinate.managers
+    # puts "Subordinate: #{subordinate.name}"
+    # puts "Manager list:"
+    managers.each do |m|
+      puts m.name
+    end
+    return managers.include?(manager)
   end
 
   def managers       #tested
@@ -104,14 +166,19 @@ class User < ActiveRecord::Base
     if self.type == 'Player'
       subordinate = self
       venue = subordinate.venue
+      #puts "managers - venue name: #{venue.name}"
       agent_role = Role.find_by_name('Agent')
       rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", agent_role.id, venue.id]
       return nil if rlist.count == 0
+      #puts "managers - responsibilities found"
       agent = User.find_by_id(rlist.first.user_id)
       return nil if agent == nil
+      #puts "managers - agent: #{agent.to_json}"
       managers << agent
       subordinate = agent
     end
+    #puts "managers - name: #{self.name}"
+    #managers << self
     rlist = Responsibility.find_by_sql ["SELECT manager_id FROM responsibilities r WHERE r.user_id = ?", self.id]
     return managers if rlist.count == 0
     rlist.each do |r|
@@ -231,13 +298,16 @@ class User < ActiveRecord::Base
   end
 
   def most_senior_role      # Tested
+    return Role.find_by_name('Player') if self.type == 'Player'
     responsibilities = Responsibility.where("user_id = ?", self)
-    return nil unless responsibilities
+    return nil unless responsibilities.count > 0
+    return responsibilities.first.role if responsibilities.count == 1
     roles = []
     responsibilities.each do |r|
       roles << r.role
     end
     highest_role = roles.max { |a,b| a.level <=> b.level}
+    return highest_role
   end
 
   def immediate_subordinates    # Tested
@@ -245,13 +315,14 @@ class User < ActiveRecord::Base
     # There may be duplicates in this list
     rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.manager_id = ?", self.id]
     return nil if rlist.count == 0
-    s = []
-    rlist.each do |r|
-      user = User.find_by_id(r.user_id)
-      s << user
-    end
-    s = s.uniq
-    return s
+    # s = []
+    # rlist.each do |r|
+    #   user = User.find_by_id(r.user_id)
+    #   s << user
+    # end
+    # s = s.uniq
+    # return s
+    users = User.find(rlist.map(&:user_id).uniq)
   end
 
   def is_subordinate_of?(user, location)    #  still working on this

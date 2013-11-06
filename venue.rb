@@ -28,6 +28,12 @@ class Venue < Location
     return agent
   end
 
+  def has_employee?(employee)     # tested
+    role = Role.find_by_name('Employee')
+    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, self.id]
+    return rlist.count > 0
+  end
+
   def is_managed_by?(user)
     # Is the current venue in the list of venues managed by the user
     # The user may be either an Employee or an Agent
