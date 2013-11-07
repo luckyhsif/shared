@@ -118,27 +118,31 @@ class User < ActiveRecord::Base
     return false if subordinate == manager
     return false if manager.type == 'Player'
     manager_role = manager.most_senior_role
-    subordinate_role = subordinate.most_senior_role
-    # puts "\n Subordinate role: #{subordinate_role.to_json}"
+    if subordinate.type == 'Player'
+      subordinate_role_name = 'Player'
+    else
+      subordinate_role = subordinate.most_senior_role
+      subordinate_role_name = subordinate_role.name
+    end
     # puts "Manager: #{manager.name}"       # Employee
     # puts "manager role: #{manager_role.name}"
     # puts "Subordinate: #{subordinate.name}"   # Player
-    # puts "subordinate role: #{subordinate_role.name}"
+    # puts "subordinate role_name: #{subordinate_role_name}"
     return true if manager_role.name == 'Staff'
     if manager_role.name == 'Employee' 
-      return false unless subordinate_role.name == 'Player'
+      return false unless subordinate_role_name == 'Player'
       #puts "Manager is Employee and Subordinate is Player"
       return subordinate.venue.has_employee?(manager)
     end
     # manager is agent or senior; subordinate can be anyone
     if manager_role.name == 'Agent'
-      return manager.agent_venues.include?(subordinate.venue) if subordinate_role.name == 'Player'
-      return manager.agent_employees.include?(subordinate) if subordinate_role.name == 'Employee'
+      return manager.agent_venues.include?(subordinate.venue) if subordinate_role_name == 'Player'
+      return manager.agent_employees.include?(subordinate) if subordinate_role_name == 'Employee'
       return false
     end
-    if subordinate_role.name == 'Player'
+    if subordinate_role_name == 'Player'
       subordinate = subordinate.agent_of_player
-    elsif subordinate_role.name == 'Employee'
+    elsif subordinate_role_name == 'Employee'
       subordinate = subordinate.agent_of_employee
     end
     managers = subordinate.managers
