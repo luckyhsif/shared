@@ -43,7 +43,7 @@ class User < ActiveRecord::Base
     return self.permissions
   end
 
-  def manager_for_role(role)   # not used - unsure about this
+  def manager_for_role(role) 
     responsibilities = Responsibility.find_by_sql ["SELECT manager_id FROM responsibilities r WHERE r.role_id = ? AND r.user_id = ?", role.id, self.id]
     return nil if responsibilities.count == 0
     manager = User.find_by_id(responsibilities.first.manager_id)
