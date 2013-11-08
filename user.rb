@@ -24,6 +24,12 @@ class User < ActiveRecord::Base
             {count: 6, user_type: 'CountryDistributor'},
             {count: 7, user_type: 'Staff'}]
 
+  def self.country_distributors                   # tested
+    role = Role.find_by_name('Country Distributor')
+    rlist = Responsibility.where("role_id = ?", role.id)
+    cds = User.find(rlist.map(&:user_id).uniq)
+  end
+
   def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
     # who is requesting the action? employees or agents and do they have permission to
     # issue a bonus to a player?
@@ -52,11 +58,11 @@ class User < ActiveRecord::Base
 
   def agent_of_employee    #tested
     employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.find_by_sql ["SELECT location_id FROM responsibilities r WHERE r.user_id = ? AND r.role_id = ?", self.id, employee_role.id]
+    rlist = Responsibility.where("user_id=? AND role_id=?", self.id, employee_role.id)
     return false if rlist.count == 0
     venue_id = rlist.first.location_id
     agent_role = Role.find_by_name('Agent')
-    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", agent_role.id, venue_id]
+    rlist = Responsibility.where("location_id=? AND role_id=?", venue_id, agent_role.id)
     return false if rlist.count == 0
     agent = User.find_by_id(rlist.first.user_id)
     return agent
@@ -64,20 +70,20 @@ class User < ActiveRecord::Base
 
   def is_employee?   # tested
     employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ?", employee_role.id]
+    rlist = Responsibility.where("role_id=?", employee_role.id)
     return rlist.count > 0
   end
 
   def is_employee_at_venue?(venue)   # tested
     employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.find_by_sql ["SELECT id FROM responsibilities r WHERE r.user_id = ? AND r.role_id = ? AND r.location_id = ?", self.id, employee_role.id, venue.id]
+    rlist = Responsibility.where("user_id=? AND role_id=? AND location_id=?", self.id, employee_role.id, venue.id)
     return rlist.count > 0
   end
   
   def agent_venues    # tested
     venues = []
     role = Role.find_by_name('Agent')
-    rlist = Responsibility.find_by_sql ["SELECT location_id FROM responsibilities r WHERE r.user_id = ? AND r.role_id = ?", self.id, role.id]
+    rlist = Responsibility.where("user_id=? AND role_id=?", self.id, role.id)
     return venues if rlist.count == 0
     rlist.each do |r|
       venue = Venue.find_by_id(r.location_id)
@@ -90,10 +96,10 @@ class User < ActiveRecord::Base
     employees = []
     agent_role = Role.find_by_name('Agent')
     employee_role = Role.find_by_name('Employee')
-    alist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.user_id = ? AND r.role_id = ?", self.id, agent_role.id]
+    alist = Responsibility.where("user_id=? AND role_id=?", self.id, agent_role.id)
     return employees if alist.count == 0
     alist.each do |a|
-      elist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.manager_id = ?", employee_role.id, a.user_id]
+      elist = Responsibility.where("role_id=? AND manager_id=?", employee_role.id, a.user_id)
       elist.each do |e|
         employee = User.find_by_id(e.user_id)
         employees << employee
@@ -106,7 +112,7 @@ class User < ActiveRecord::Base
     return nil unless self.type == 'Player'
     venue = self.venue
     agent_role = Role.find_by_name('Agent')
-    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", agent_role.id, venue.id]
+    rlist = Responsibility.where("role_id=? AND location_id=?", agent_role.id, venue.id)
     return nil if rlist.count == 0
     agent = User.find_by_id(rlist.first.user_id)
     return agent
@@ -124,17 +130,15 @@ class User < ActiveRecord::Base
       subordinate_role = subordinate.most_senior_role
       subordinate_role_name = subordinate_role.name
     end
-    # puts "Manager: #{manager.name}"       # Employee
+    # puts "Manager: #{manager.name}" 
     # puts "manager role: #{manager_role.name}"
-    # puts "Subordinate: #{subordinate.name}"   # Player
+    # puts "Subordinate: #{subordinate.name}" 
     # puts "subordinate role_name: #{subordinate_role_name}"
     return true if manager_role.name == 'Staff'
     if manager_role.name == 'Employee' 
       return false unless subordinate_role_name == 'Player'
-      #puts "Manager is Employee and Subordinate is Player"
       return subordinate.venue.has_employee?(manager)
     end
-    # manager is agent or senior; subordinate can be anyone
     if manager_role.name == 'Agent'
       return manager.agent_venues.include?(subordinate.venue) if subordinate_role_name == 'Player'
       return manager.agent_employees.include?(subordinate) if subordinate_role_name == 'Employee'
@@ -155,19 +159,14 @@ class User < ActiveRecord::Base
     if self.type == 'Player'
       subordinate = self
       venue = subordinate.venue
-      #puts "managers - venue name: #{venue.name}"
       agent_role = Role.find_by_name('Agent')
-      rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", agent_role.id, venue.id]
+      rlist = Responsibility.where("role_id=? AND location_id=?", agent_role.id, venue.id)
       return nil if rlist.count == 0
-      #puts "managers - responsibilities found"
       agent = User.find_by_id(rlist.first.user_id)
       return nil if agent == nil
-      #puts "managers - agent: #{agent.to_json}"
       managers << agent
       subordinate = agent
     end
-    #puts "managers - name: #{self.name}"
-    #managers << self
     rlist = Responsibility.find_by_sql ["SELECT manager_id FROM responsibilities r WHERE r.user_id = ?", self.id]
     return managers if rlist.count == 0
     rlist.each do |r|
