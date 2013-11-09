@@ -316,7 +316,10 @@ class User < ActiveRecord::Base
   end
 
   def most_senior_role      # Tested
-    return Role.find_by_name('Player') if self.type == 'Player'
+    if self.type == 'Player'
+      role = create(:role, name: 'Player', level: 1)
+      return role
+    end  
     responsibilities = Responsibility.where("user_id = ?", self)
     return nil unless responsibilities.count > 0
     return responsibilities.first.role if responsibilities.count == 1
