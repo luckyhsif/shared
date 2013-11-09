@@ -24,12 +24,6 @@ class User < ActiveRecord::Base
             {count: 6, user_type: 'CountryDistributor'},
             {count: 7, user_type: 'Staff'}]
 
-  def self.country_distributors                   # tested
-    role = Role.find_by_name('Country Distributor')
-    rlist = Responsibility.where("role_id = ?", role.id)
-    cds = User.find(rlist.map(&:user_id).uniq)
-  end
-
   def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
     # who is requesting the action? employees or agents and do they have permission to
     # issue a bonus to a player?
@@ -153,6 +147,7 @@ class User < ActiveRecord::Base
     manager = self
     return false if subordinate == manager
     return false if manager.type == 'Player'
+    return true if manager.type == 'Staff'
     manager_role = manager.most_senior_role
     if subordinate.type == 'Player'
       subordinate_role_name = 'Player'
@@ -320,6 +315,10 @@ class User < ActiveRecord::Base
       role = create(:role, name: 'Player', level: 1)
       return role
     end  
+    if self.type == 'Staff'
+      role = create(:staff)
+      return role
+    end
     responsibilities = Responsibility.where("user_id = ?", self)
     return nil unless responsibilities.count > 0
     return responsibilities.first.role if responsibilities.count == 1
