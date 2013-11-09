@@ -4,7 +4,7 @@ class Venue < Location
 
   validates_presence_of :address
   has_many :accounts
-  
+  has_many :players
   validate :may_not_have_children
   
   def account(name, currency = Account::DEFAULT_CURRENCY)

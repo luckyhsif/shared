@@ -70,7 +70,13 @@ class User < ActiveRecord::Base
 
   def is_employee?   # tested
     employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.where("role_id=?", employee_role.id)
+    rlist = Responsibility.where("role_id=? AND user_id=?", employee_role, self)
+    return rlist.count > 0
+  end
+
+  def is_agent? 
+    agent_role = Role.find_by_name('Agent')
+    rlist = Responsibility.where("role_id=? AND user_id=?", agent_role, self)
     return rlist.count > 0
   end
 
@@ -106,6 +112,30 @@ class User < ActiveRecord::Base
       end
     end
     return employees
+  end
+
+  def agent_players     #tested
+    agent_role = Role.find_by_name('Agent')
+    rlist = Responsibility.where("user_id=? AND role_id=?", self, agent_role)
+    players = []
+    return players if rlist.count == 0
+    rlist.each do |r|
+      venue = r.location
+      players.push(*venue.players)
+    end
+    return players
+  end
+
+  def employee_players  
+    employee_role = Role.find_by_name('Employee')
+    rlist = Responsibility.where("user_id=? AND role_id=?", self, employee_role)
+    players = []
+    return players if rlist.count == 0
+    rlist.each do |r|
+      venue = r.location
+      players.push(*venue.players)
+    end
+    return players
   end
 
   def agent_of_player    # tested
@@ -299,17 +329,8 @@ class User < ActiveRecord::Base
   end
 
   def immediate_subordinates    # Tested
-    # Find all the immediate subordinates of the current user
-    # There may be duplicates in this list
-    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.manager_id = ?", self.id]
+    rlist = Responsibility.where("manager_id = ?", self)
     return nil if rlist.count == 0
-    # s = []
-    # rlist.each do |r|
-    #   user = User.find_by_id(r.user_id)
-    #   s << user
-    # end
-    # s = s.uniq
-    # return s
     users = User.find(rlist.map(&:user_id).uniq)
   end
 
@@ -344,8 +365,7 @@ class User < ActiveRecord::Base
     end
   end
 
-  def manage_locations
-    #return nil if user_level(self) == 1
+  def manage_locations   #tested
     return nil if self.type == 'Player'
     manager_locations = []
     for loc in self.locations
@@ -355,19 +375,6 @@ class User < ActiveRecord::Base
     end
     return manager_locations
   end
-
-  # def manage_locations2
-  #   return [self.location] if user_level(self) == 1   # player.location or employee.location
-  #   manager_locations = []
-  #   for loc in self.locations   # if self eq agent then loc is agent loc
-  #     manager_locations << loc
-  #     if user_level(self) > 3
-  #       locs = loc.descendant_locations
-  #       manager_locations.push(*locs) unless locs == nil
-  #     end
-  #   end
-  #   return manager_locations
-  # end
 
   # def manage_players       
   #   return nil if user_level(self) == 1                    # Can't be a player
@@ -381,7 +388,7 @@ class User < ActiveRecord::Base
   #   return players
   # end
 
-  def includes_location?(user)    # Don't use this to authenticate the current user
+  def includes_location?(user)    # Not sure if this is still needed
     # This algorithm determines if the locations belonging to self includes
     #  the locations belonging to user.
     # In the case where the manager (self) and the subornates (user) both have
