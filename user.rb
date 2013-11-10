@@ -146,6 +146,7 @@ class User < ActiveRecord::Base
     subordinate = user
     manager = self
     return false if subordinate == manager
+    return false if manager.active == false
     return false if manager.type == 'Player'
     return true if manager.type == 'Staff'
     manager_role = manager.most_senior_role
@@ -310,13 +311,13 @@ class User < ActiveRecord::Base
     return all_locations
   end
 
-  def most_senior_role      # Tested
-    if self.type == 'Player'
-      role = create(:role, name: 'Player', level: 1)
+  def most_senior_role  
+    if self.class.name == 'Player'
+      role = Role.find_by_name('Player')
       return role
-    end  
-    if self.type == 'Staff'
-      role = create(:staff)
+    end
+    if self.class.name == 'Staff'
+      role = Role.find_by_name('Staff')
       return role
     end
     responsibilities = Responsibility.where("user_id = ?", self)
@@ -369,6 +370,7 @@ class User < ActiveRecord::Base
 
   def manage_locations   #tested
     return nil if self.type == 'Player'
+    return Location.all if self.type == 'Staff'
     manager_locations = []
     for loc in self.locations
       manager_locations << loc
@@ -377,18 +379,6 @@ class User < ActiveRecord::Base
     end
     return manager_locations
   end
-
-  # def manage_players       
-  #   return nil if user_level(self) == 1                    # Can't be a player
-  #   return self.location.players if user_level(self) == 2  # Players belonging to employee's location
-  #   return Players.all if user_level(self) == 7            # Staff member manages everybody
-  #   locations = self.manage_locations
-  #   players = []
-  #   for location in locations
-  #     players.push(*location.players)
-  #   end
-  #   return players
-  # end
 
   def includes_location?(user)    # Not sure if this is still needed
     # This algorithm determines if the locations belonging to self includes
