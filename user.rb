@@ -4,9 +4,10 @@ class User < ActiveRecord::Base
   has_and_belongs_to_many :received_messages, class_name: 'Message', foreign_key: :recipient_id
   has_many :responsibilities
   has_many :locations, through: :responsibilities
-  has_many :roles, through: :responsibilities
   has_many :messages, foreign_key: :sender_id
   has_many :managers, class_name: 'User', through: :responsibilities, foreign_key: :manager_id
+  has_many :userroles, foreign_key: :user_id
+  has_many :roles, through: :userroles
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
   validates :email, :presence   => true,
@@ -51,32 +52,32 @@ class User < ActiveRecord::Base
   end
 
   def agent_of_employee    #tested
-    employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.where("user_id=? AND role_id=?", self.id, employee_role.id)
+    employee_role_type = Role.find_by_name('Employee')
+    rlist = Responsibility.where("user_id=? AND role_id=?", self.id, employee_role_type.id)
     return false if rlist.count == 0
     venue_id = rlist.first.location_id
-    agent_role = Role.find_by_name('Agent')
-    rlist = Responsibility.where("location_id=? AND role_id=?", venue_id, agent_role.id)
+    agent_role_type = Role.find_by_name('Agent')
+    rlist = Responsibility.where("location_id=? AND role_id=?", venue_id, agent_role_type.id)
     return false if rlist.count == 0
     agent = User.find_by_id(rlist.first.user_id)
     return agent
   end
 
   def is_employee?   # tested
-    employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.where("role_id=? AND user_id=?", employee_role, self)
+    employee_role_type = Role.find_by_name('Employee')
+    rlist = Responsibility.where("role_id=? AND user_id=?", employee_role_type, self)
     return rlist.count > 0
   end
 
   def is_agent? 
-    agent_role = Role.find_by_name('Agent')
-    rlist = Responsibility.where("role_id=? AND user_id=?", agent_role, self)
+    agent_role_type = Role.find_by_name('Agent')
+    rlist = Responsibility.where("role_id=? AND user_id=?", agent_role_type, self)
     return rlist.count > 0
   end
 
   def is_employee_at_venue?(venue)   # tested
-    employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.where("user_id=? AND role_id=? AND location_id=?", self.id, employee_role.id, venue.id)
+    employee_role_type = Role.find_by_name('Employee')
+    rlist = Responsibility.where("user_id=? AND role_id=? AND location_id=?", self.id, employee_role_type.id, venue.id)
     return rlist.count > 0
   end
   
@@ -94,12 +95,12 @@ class User < ActiveRecord::Base
 
   def agent_employees    # tested
     employees = []
-    agent_role = Role.find_by_name('Agent')
-    employee_role = Role.find_by_name('Employee')
-    alist = Responsibility.where("user_id=? AND role_id=?", self.id, agent_role.id)
+    agent_role_type = Role.find_by_name('Agent')
+    employee_role_type = Role.find_by_name('Employee')
+    alist = Responsibility.where("user_id=? AND role_id=?", self.id, agent_role_type.id)
     return employees if alist.count == 0
     alist.each do |a|
-      elist = Responsibility.where("role_id=? AND manager_id=?", employee_role.id, a.user_id)
+      elist = Responsibility.where("role_id=? AND manager_id=?", employee_role_type.id, a.user_id)
       elist.each do |e|
         employee = User.find_by_id(e.user_id)
         employees << employee
@@ -109,8 +110,8 @@ class User < ActiveRecord::Base
   end
 
   def agent_players     #tested
-    agent_role = Role.find_by_name('Agent')
-    rlist = Responsibility.where("user_id=? AND role_id=?", self, agent_role)
+    agent_role_type = Role.find_by_name('Agent')
+    rlist = Responsibility.where("user_id=? AND role_id=?", self, agent_role_type)
     players = []
     return players if rlist.count == 0
     rlist.each do |r|
@@ -121,8 +122,8 @@ class User < ActiveRecord::Base
   end
 
   def employee_players  
-    employee_role = Role.find_by_name('Employee')
-    rlist = Responsibility.where("user_id=? AND role_id=?", self, employee_role)
+    employee_role_type = Role.find_by_name('Employee')
+    rlist = Responsibility.where("user_id=? AND role_id=?", self, employee_role_type)
     players = []
     return players if rlist.count == 0
     rlist.each do |r|
@@ -135,8 +136,8 @@ class User < ActiveRecord::Base
   def agent_of_player    # tested
     return nil unless self.type == 'Player'
     venue = self.venue
-    agent_role = Role.find_by_name('Agent')
-    rlist = Responsibility.where("role_id=? AND location_id=?", agent_role.id, venue.id)
+    agent_role_type = Role.find_by_name('Agent')
+    rlist = Responsibility.where("role_id=? AND location_id=?", agent_role_type.id, venue.id)
     return nil if rlist.count == 0
     agent = User.find_by_id(rlist.first.user_id)
     return agent
@@ -185,8 +186,8 @@ class User < ActiveRecord::Base
     if self.type == 'Player'
       subordinate = self
       venue = subordinate.venue
-      agent_role = Role.find_by_name('Agent')
-      rlist = Responsibility.where("role_id=? AND location_id=?", agent_role.id, venue.id)
+      agent_role_type = Role.find_by_name('Agent')
+      rlist = Responsibility.where("role_id=? AND location_id=?", agent_role_type.id, venue.id)
       return nil if rlist.count == 0
       agent = User.find_by_id(rlist.first.user_id)
       return nil if agent == nil
@@ -339,13 +340,20 @@ class User < ActiveRecord::Base
       role = Role.find_by_name('Staff')
       return role
     end
-    responsibilities = Responsibility.where("user_id = ?", self)
-    return nil unless responsibilities.count > 0
-    return responsibilities.first.role if responsibilities.count == 1
+    userroles = Userrole.where("user_id=?", self)
+    return nil unless userroles.count > 0
+    return userroles.first.role if userroles.count == 1
     roles = []
-    responsibilities.each do |r|
-      roles << r.role
+    userroles.each do |userrole|
+      roles << userrole.role
     end
+    # responsibilities = Responsibility.where("user_id = ?", self)
+    # return nil unless responsibilities.count > 0
+    # return responsibilities.first.role if responsibilities.count == 1
+    # roles = []
+    # responsibilities.each do |r|
+    #   roles << r.role
+    # end
     highest_role = roles.max { |a,b| a.level <=> b.level}
     return highest_role
   end

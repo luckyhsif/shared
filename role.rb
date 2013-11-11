@@ -7,7 +7,8 @@ class Role < ActiveRecord::Base
   validates :name, :presence   => true,
                    :uniqueness => { :case_sensitive => false }
   has_many :locations, through: :responsibilities
-  has_many :users, through: :responsibilities
+  has_many :userroles, foreign_key: :role_id
+  has_many :users, through: :userroles
 
   def is_senior_to?(role)
     while role.parent != nil
