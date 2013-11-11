@@ -67,6 +67,17 @@ class Location < ActiveRecord::Base
     self.parent == nil
   end
 
+  def descendant_venues
+    return nil if self.children == nil
+    all_children = []
+    for child in self.children
+      all_children << child if child.is_a?(Venue)
+      child_locs = child.descendant_locations
+      all_children.push(*child_locs) unless child_locs == nil
+    end
+    return all_children
+  end 
+
   def descendant_locations
     return nil if self.children == nil
     all_children = []

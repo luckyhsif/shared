@@ -87,7 +87,7 @@ class User < ActiveRecord::Base
     return venues if rlist.count == 0
     rlist.each do |r|
       venue = Venue.find_by_id(r.location_id)
-      venues << r.location
+      venues << venue   # changed recently from r.location_id
     end
     return venues
   end
@@ -205,6 +205,10 @@ class User < ActiveRecord::Base
     return managers
   end
 
+  def manager_of?(user)
+    user.managers.include?(self)
+  end
+
   def manager(location)
     # Returns the immediate manager of the current user
     puts "Entering User - manager, self: #{self.to_json}"
@@ -291,7 +295,10 @@ class User < ActiveRecord::Base
   end
 
   def allocated_locations
-    responsibilities = Responsibility.where("user_id = ?", self)
+    # returns the locations allocated directly to the current user
+    return [] if self.type == 'Player' || self.type == 'Staff'
+    role = self.most_senior_role
+    responsibilities = Responsibility.where("user_id=? AND role_id=?", self, role)
     return nil unless responsibilities
     locations = []
     responsibilities.each do |r|
@@ -300,6 +307,18 @@ class User < ActiveRecord::Base
     return locations
   end
   
+  def distributor_locations
+    locations = []
+    distributor = self
+    role = distributor.most_senior_role
+    rlist = Responsibility.where("user_id=? AND role_id=?", distributor, role)
+    rlist.each do |r|
+      loc = Location.find_by_id(r.location_id)
+      locations.push(*loc.descendant_locations)
+    end
+    return locations
+  end
+
   def included_locations    # This is tested but is not used yet
     immediate_locations = self.allocated_locations
     all_locations = []
@@ -359,14 +378,14 @@ class User < ActiveRecord::Base
     false
   end
 
-  def user_level(user)   # A user no longer has a level. Users no have responsibiity levels
-    begin
-      # see http://stackoverflow.com/questions/2244915/how-do-i-search-within-an-array-of-hashes-by-hash-values-in-ruby
-      return LEVELS.select{ |l| l[:user_type] == user.type}.first[:count]
-    rescue
-      return 0
-    end
-  end
+  # def user_level(user)   # A user no longer has a level. Users no have responsibiity levels
+  #   begin
+  #     # see http://stackoverflow.com/questions/2244915/how-do-i-search-within-an-array-of-hashes-by-hash-values-in-ruby
+  #     return LEVELS.select{ |l| l[:user_type] == user.type}.first[:count]
+  #   rescue
+  #     return 0
+  #   end
+  # end
 
   def manage_locations   #tested
     return nil if self.type == 'Player'
