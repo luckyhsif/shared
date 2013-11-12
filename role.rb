@@ -8,7 +8,6 @@ class Role < ActiveRecord::Base
                    :uniqueness => { :case_sensitive => false }
   has_many :locations, through: :responsibilities
   has_many :userroles, foreign_key: :role_id
-  has_many :users, through: :userroles
 
   def is_senior_to?(role)
     while role.parent != nil

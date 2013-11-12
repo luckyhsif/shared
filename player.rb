@@ -13,6 +13,14 @@ class Player < User
     return account(name, currency).balance
   end
 
+  def buy_into_network_game(amount, currency = Account::DEFAULT_CURRENCY, game)
+    puts "todo"
+  end
+
+  def cash_out_from_network_game(amount, currency = Account::DEFAULT_CURRENCY, game)
+    puts "todo"
+  end
+
   def deposit_cash(amount, currency = Account::DEFAULT_CURRENCY)
     # who is requesting the action? employees or agents and do they have permission to
     # let the player deposit cash?

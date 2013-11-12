@@ -5,9 +5,9 @@ class User < ActiveRecord::Base
   has_many :responsibilities
   has_many :locations, through: :responsibilities
   has_many :messages, foreign_key: :sender_id
-  has_many :managers, class_name: 'User', through: :responsibilities, foreign_key: :manager_id
   has_many :userroles, foreign_key: :user_id
   has_many :roles, through: :userroles
+  has_many :managers, through: :userroles, foreign_key: :manager_id
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
   validates :email, :presence   => true,
@@ -53,13 +53,10 @@ class User < ActiveRecord::Base
 
   def agent_of_employee    #tested
     employee_role_type = Role.find_by_name('Employee')
-    rlist = Responsibility.where("user_id=? AND role_id=?", self.id, employee_role_type.id)
-    return false if rlist.count == 0
-    venue_id = rlist.first.location_id
-    agent_role_type = Role.find_by_name('Agent')
-    rlist = Responsibility.where("location_id=? AND role_id=?", venue_id, agent_role_type.id)
-    return false if rlist.count == 0
-    agent = User.find_by_id(rlist.first.user_id)
+    rlist = Userrole.where("user_id=? AND role_id=?", self.id, employee_role_type.id)
+    return unless rlist && rlist.count > 0
+    agent = rlist.first.manager
+    return nil if agent.nil?
     return agent
   end
 
@@ -97,14 +94,10 @@ class User < ActiveRecord::Base
     employees = []
     agent_role_type = Role.find_by_name('Agent')
     employee_role_type = Role.find_by_name('Employee')
-    alist = Responsibility.where("user_id=? AND role_id=?", self.id, agent_role_type.id)
+    alist = Userrole.where("role_id=? AND manager_id=?", employee_role_type.id, self.id)
     return employees if alist.count == 0
-    alist.each do |a|
-      elist = Responsibility.where("role_id=? AND manager_id=?", employee_role_type.id, a.user_id)
-      elist.each do |e|
-        employee = User.find_by_id(e.user_id)
-        employees << employee
-      end
+    alist.each do |userrole|
+      employees << userrole.user
     end
     return employees
   end
@@ -138,8 +131,8 @@ class User < ActiveRecord::Base
     venue = self.venue
     agent_role_type = Role.find_by_name('Agent')
     rlist = Responsibility.where("role_id=? AND location_id=?", agent_role_type.id, venue.id)
-    return nil if rlist.count == 0
-    agent = User.find_by_id(rlist.first.user_id)
+    return nil if !rlist || rlist.count == 0
+    agent = User.find_by_id(rlist.first.user)
     return agent
   end
 
@@ -157,6 +150,7 @@ class User < ActiveRecord::Base
       subordinate_role = subordinate.most_senior_role
       subordinate_role_name = subordinate_role.name
     end
+    # puts "allowed_to_maintain?(user) - all roles"
     # puts "Manager: #{manager.name}" 
     # puts "manager role: #{manager_role.name}"
     # puts "Subordinate: #{subordinate.name}" 
@@ -175,6 +169,7 @@ class User < ActiveRecord::Base
       subordinate = subordinate.agent_of_player
     elsif subordinate_role_name == 'Employee'
       subordinate = subordinate.agent_of_employee
+      return false if subordinate.nil?     # This will hapen if the test case does not include an employee role type
     end
     managers = subordinate.managers
     return managers.include?(manager)
@@ -194,15 +189,25 @@ class User < ActiveRecord::Base
       managers << agent
       subordinate = agent
     end
-    rlist = Responsibility.find_by_sql ["SELECT manager_id FROM responsibilities r WHERE r.user_id = ?", self.id]
+    #Select the manager ids from Userrole where 
+    rlist = Userrole.where("user_id=?", self.id)
     return managers if rlist.count == 0
-    rlist.each do |r|
-      if r.manager_id != nil
-        manager = User.find_by_id(r.manager_id)
+    rlist.each do |role|
+      if role.manager != nil
+        manager = User.find_by_id(role.manager_id)
         managers << manager
         managers.push(*manager.managers)
       end
     end
+    # rlist = Responsibility.find_by_sql ["SELECT manager_id FROM responsibilities r WHERE r.user_id = ?", self.id]
+    # return managers if rlist.count == 0
+    # rlist.each do |r|
+    #   if r.manager_id != nil
+    #     manager = User.find_by_id(r.manager_id)
+    #     managers << manager
+    #     managers.push(*manager.managers)
+    #   end
+    # end
     return managers
   end
 
@@ -359,9 +364,9 @@ class User < ActiveRecord::Base
   end
 
   def immediate_subordinates    # Tested
-    rlist = Responsibility.where("manager_id = ?", self)
-    return nil if rlist.count == 0
-    users = User.find(rlist.map(&:user_id).uniq)
+    urlist = Userrole.where("manager_id = ?", self)
+    return nil unless urlist && urlist.count > 0
+    users = User.find(urlist.map(&:user_id).uniq)
   end
 
   def is_subordinate_of?(user, location)    #  still working on this
