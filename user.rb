@@ -139,6 +139,9 @@ class User < ActiveRecord::Base
   def allowed_to_maintain?(user)   #tested
     subordinate = user
     manager = self
+    # puts "allowed_to_maintain?(user) - all roles"
+    # puts "Manager: #{manager.name}" 
+    # puts "Subordinate: #{subordinate.name}" 
     return false if subordinate == manager
     return false if manager.active == false
     return false if manager.type == 'Player'
