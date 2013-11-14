@@ -10,8 +10,6 @@ class Role < ActiveRecord::Base
   has_many :userroles, foreign_key: :role_id
 
   def is_senior_to?(role)
-    while role.parent != nil
-      
-    end
+    self.level > role.level
   end
 end

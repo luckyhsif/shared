@@ -24,6 +24,15 @@ class Location < ActiveRecord::Base
     return Location.where("parent_id is NULL")
   end
 
+  def self.unallocated_root_locations
+    root_locations = []
+    Location.roots.each do |root|
+      rs = Responsibility.where("location_id=?", root.id)
+      root_locations << root if rs.empty?
+    end
+    return root_locations
+  end
+
   def self.country_locations
     return Location.roots
   end
