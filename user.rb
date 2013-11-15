@@ -175,6 +175,8 @@ class User < ActiveRecord::Base
       return false if subordinate.nil?     # This will hapen if the test case does not include an employee role type
     end
     managers = subordinate.managers
+    # puts "subordinate managers: #{managers.to_json}"
+    # puts "must include: #{manager.to_json}"
     return managers.include?(manager)
   end
 
@@ -305,11 +307,15 @@ class User < ActiveRecord::Base
 
   def allocated_locations
     # returns the locations allocated directly to the current user
-    return [] if self.type == 'Player' || self.type == 'Staff'
+    return [] if self.type == 'Staff'
+    locations = []
+    if self.type == 'Player'
+      locations << self.venue
+      return locations
+    end
     role = self.most_senior_role
     responsibilities = Responsibility.where("user_id=? AND role_id=?", self, role)
     return nil unless responsibilities
-    locations = []
     responsibilities.each do |r|
       locations << r.location
     end
@@ -451,6 +457,10 @@ class User < ActiveRecord::Base
       when 2
         return self.location == user.location
     end
+  end
+
+  def roles
+    roles = Userrole.where("user_id=?", self.id)
   end
 
   def adjust_logons(succeeded = true)
