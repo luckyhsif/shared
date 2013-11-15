@@ -366,7 +366,7 @@ class User < ActiveRecord::Base
     return highest_role
   end
 
-  def immediate_subordinates    # Tested
+  def immediate_subordinates    # This should not be used anymore. Subordinates belong to roles
     urlist = Userrole.where("manager_id = ?", self)
     return nil unless urlist && urlist.count > 0
     users = User.find(urlist.map(&:user_id).uniq)

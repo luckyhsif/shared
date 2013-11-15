@@ -12,4 +12,21 @@ class Role < ActiveRecord::Base
   def is_senior_to?(role)
     self.level > role.level
   end
+
+  def subordinate_role_type
+    staff_role_type = Role.find_by_name('Staff')
+    cd_role_type = Role.find_by_name('Country Distributor')
+    md_role_type = Role.find_by_name('Master Distributor')
+    rd_role_type = Role.find_by_name('Regional Distributor') 
+    agent_role_type = Role.find_by_name('Agent')   
+    employee_role_type = Role.find_by_name('Employee')
+    player_role_type = Role.find_by_name('Player')
+    return cd_role_type if self == staff_role_type
+    return md_role_type if self == cd_role_type
+    return rd_role_type if self == md_role_type
+    return agent_role_type if self == rd_role_type
+    return employee_role_type if self == agent_role_type 
+    return player_role_type if self == employee_role_type
+    return nil
+  end
 end

@@ -55,7 +55,8 @@ class Venue < Location
   private
   
     def may_not_have_children
-      errors.add_to_base("A Venue may not have children") unless self.children.empty?
+      #errors.add_to_base("A Venue may not have children") unless self.children.empty?
+      errors[:base] << "A Venue may not have children" unless self.children.empty?
     end
 
 end
