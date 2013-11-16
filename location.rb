@@ -9,12 +9,6 @@ class Location < ActiveRecord::Base
   has_many :users, through: :responsibilities
   has_many :roles, through: :responsibilities
   has_and_belongs_to_many :users
-  validates_numericality_of :latitude, :greater_than_or_equal_to => -90.0, 
-                                       :less_than_or_equal_to => 90.0, 
-                                       :message => "Latitude must be between -90.0 and 90.0"
-  validates_numericality_of :longitude, :greater_than_or_equal_to => -180.0, 
-                                       :less_than_or_equal_to => 180.0, 
-                                       :message => "Longitude must be between -180.0 and 180.0"
 
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, 
             :parent_may_not_be_venue

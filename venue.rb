@@ -5,6 +5,12 @@ class Venue < Location
   validates_presence_of :address
   has_many :accounts
   has_many :players
+  validates_numericality_of :latitude, :greater_than_or_equal_to => -90.0, 
+                                       :less_than_or_equal_to => 90.0, 
+                                       :message => "Latitude must be between -90.0 and 90.0"
+  validates_numericality_of :longitude, :greater_than_or_equal_to => -180.0, 
+                                       :less_than_or_equal_to => 180.0, 
+                                       :message => "Longitude must be between -180.0 and 180.0"
   validate :may_not_have_children
   
   def account(name, currency = Account::DEFAULT_CURRENCY)

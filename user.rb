@@ -1,6 +1,6 @@
 class User < ActiveRecord::Base
 
-  has_and_belongs_to_many :permissions, foreign_key: :user_id
+  has_many :permissions, foreign_key: :user_id
   has_and_belongs_to_many :received_messages, class_name: 'Message', foreign_key: :recipient_id
   has_many :responsibilities
   has_many :locations, through: :responsibilities
