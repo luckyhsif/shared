@@ -9,6 +9,13 @@ class Location < ActiveRecord::Base
   has_many :users, through: :responsibilities
   has_many :roles, through: :responsibilities
   has_and_belongs_to_many :users
+  validates_numericality_of :latitude, :greater_than_or_equal_to => -90.0, 
+                                       :less_than_or_equal_to => 90.0, 
+                                       :message => "Latitude must be between -90.0 and 90.0"
+  validates_numericality_of :longitude, :greater_than_or_equal_to => -180.0, 
+                                       :less_than_or_equal_to => 180.0, 
+                                       :message => "Longitude must be between -180.0 and 180.0"
+
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, 
             :parent_may_not_be_venue
   before_save :may_not_be_a_parent_in_child_hierarchy
@@ -103,18 +110,31 @@ class Location < ActiveRecord::Base
     return tree.include(parent_to_be)
   end
 
+  def all_parents
+    parents = []
+    current = self
+    while current.parent do
+      parents << current.parent
+      current = current.parent
+    end
+    return parents
+  end
+
   private
 
   def may_not_be_a_parent_in_child_hierarchy
-    child = self
-    parent = self.parent
-    if parent
-      loc_ids = child.parent_location_ids
-      if loc_ids.include?(child.id)
-        puts "\n may_not_be_a_parent_in_child_hierarchy"
-        errors.add(:parent, "Child location may not be a parent at the same time")
-      end
-    end
+    # get the immediate children of the last created object
+    # for each child, see if that child is a parent as well
+    # testloc = Location.last
+    # children = testloc.children if testloc.children
+    # return if children.nil? || testloc.parent.nil?
+    # parents = testloc.all_parents
+    # children.each do |child|
+    #   if parents.include?(child)
+    #     puts "\n may_not_be_a_parent_in_child_hierarchy"
+    #     errors.add(:parent, "Child location may not be a parent at the same time")
+    #   end
+    # end
   end
 
   def parent_may_not_be_a_circular_reference
