@@ -40,7 +40,7 @@ class Userrole < ActiveRecord::Base
   def agent_subordinates
     senior_user = self.user
     empty_list = []
-    agent_role_type = Role.find_by_name('Agent')
+    agent_role_type = self.role
     return empty_list if agent_role_type.nil?
     subordinates = Userrole.where("role_id=? AND manager_id=?", agent_role_type.id, senior_user.id)
   end
@@ -55,11 +55,12 @@ class Userrole < ActiveRecord::Base
 
   def most_senior_subordinates
     senior_role_type = self.role
-    senior_user = self.user
+    #puts "Getting the most senior subordinates of user #{self.user.name} in the role of #{senior_role_type.name}"
     senior_user_role = self
     empty_list = []
     case senior_role_type.name
       when 'Country Distributor'
+        #puts "\nRequesting the most senior subordinates of a country distributor"
         # Are there any subordinate Master Distributor roles?
         subordinates = senior_user_role.master_distributor_subordinates
         return subordinates if !subordinates.empty?
@@ -70,13 +71,18 @@ class Userrole < ActiveRecord::Base
         subordinates = senior_user_role.agent_subordinates
         return subordinates
       when 'Master Distributor'
+        #puts "\nRequesting the most senior subordinates of a master distributor"
         # Are there any subordinate Regional Distributor roles?
         subordinates = senior_user_role.regional_distributor_subordinates
         return subordinates if !subordinates.empty?
         # Are there any subordinate Agent roles?
         subordinates = senior_user_role.agent_subordinates
+        return subordinates        
+        # Are there any subordinate Employee roles?
+        subordinates = senior_user_role.employee_subordinates
         return subordinates
       when 'Regional Distributor'
+        #puts "\nRequesting the most senior subordinates of a regional distributor"
         # Are there any subordinate Agent roles?
         subordinates = senior_user_role.agent_subordinates
         return subordinates
@@ -104,7 +110,7 @@ class Userrole < ActiveRecord::Base
       return if manager.nil?
       return if manager.nil?
       userroles = Userrole.where("user_id=? AND role_id=?", manager.id, employee_role_type.id)
-      return if userroles == [] || userroles.count == 0
+      return if userroles.empty? || userroles.count == 0
       errors.add(:manager, "An employee cannot be selected as manager")
     end
 

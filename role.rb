@@ -16,20 +16,13 @@ class Role < ActiveRecord::Base
     self.level > role.level
   end
 
-  def subordinate_role_type
-    staff_role_type = Role.find_by_name('Staff')
-    cd_role_type = Role.find_by_name('Country Distributor')
-    md_role_type = Role.find_by_name('Master Distributor')
-    rd_role_type = Role.find_by_name('Regional Distributor') 
-    agent_role_type = Role.find_by_name('Agent')   
-    employee_role_type = Role.find_by_name('Employee')
-    player_role_type = Role.find_by_name('Player')
-    return cd_role_type if self == staff_role_type
-    return md_role_type if self == cd_role_type
-    return rd_role_type if self == md_role_type
-    return agent_role_type if self == rd_role_type
-    return employee_role_type if self == agent_role_type 
-    return player_role_type if self == employee_role_type
+  def subordinate_role_type_name
+    return 'Country Distributor' if self.name == 'Staff'
+    return 'Master Distributor' if self.name == 'Country Distributor'
+    return 'Regional Distributor' if self.name == 'Master Distributor'
+    return 'Agent' if self.name == 'Regional Distributor'
+    return 'Employee' if self.name == 'Agent'
+    return 'Player' if self.name == 'Employee'
     return nil
   end
 end
