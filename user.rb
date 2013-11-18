@@ -114,15 +114,16 @@ class User < ActiveRecord::Base
     return players
   end
 
-  def employee_players  
+  def employee_players 
     employee_role_type = Role.find_by_name('Employee')
     rlist = Responsibility.where("user_id=? AND role_id=?", self, employee_role_type)
     players = []
-    return players if rlist.count == 0
-    rlist.each do |r|
-      venue = r.location
+    return players if rlist.empty?
+    rlist.each do |resp|
+      venue = resp.location
       players.push(*venue.players)
     end
+    puts "employee_players - #{players.to_json}"
     return players
   end
 
@@ -139,7 +140,7 @@ class User < ActiveRecord::Base
   def allowed_to_maintain?(user)   #tested
     subordinate = user
     manager = self
-    # puts "allowed_to_maintain?(user) - all roles"
+    # puts "allowed_to_maintain?(user)"
     # puts "Manager: #{manager.name}" 
     # puts "Subordinate: #{subordinate.name}" 
     return false if subordinate == manager
@@ -158,7 +159,8 @@ class User < ActiveRecord::Base
     # puts "manager role: #{manager_role.name}"
     # puts "Subordinate: #{subordinate.name}" 
     # puts "subordinate role_name: #{subordinate_role_name}"
-    return true if manager_role.name == 'Staff'
+    #return true if manager_role.name == 'Staff'
+    #return true if manager.type == 'Staff'
     if manager_role.name == 'Employee' 
       return false unless subordinate_role_name == 'Player'
       return subordinate.venue.has_employee?(manager)

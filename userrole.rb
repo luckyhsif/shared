@@ -40,7 +40,7 @@ class Userrole < ActiveRecord::Base
   def agent_subordinates
     senior_user = self.user
     empty_list = []
-    agent_role_type = self.role
+    agent_role_type = Role.find_by_name('Agent')
     return empty_list if agent_role_type.nil?
     subordinates = Userrole.where("role_id=? AND manager_id=?", agent_role_type.id, senior_user.id)
   end
@@ -102,16 +102,35 @@ class Userrole < ActiveRecord::Base
   private
 
     def employee_cannot_be_manager
-      employee_role_type = Role.find_by_name('Employee')
-      return if employee_role_type.nil?   # This seems to be unavoidable when testing
-      lastrole = Userrole.all.last
-      return if lastrole == nil
-      manager = lastrole.manager
-      return if manager.nil?
-      return if manager.nil?
-      userroles = Userrole.where("user_id=? AND role_id=?", manager.id, employee_role_type.id)
-      return if userroles.empty? || userroles.count == 0
-      errors.add(:manager, "An employee cannot be selected as manager")
+      #  Uncomment this block after t.timestamps were added to userrole table
+      # found = false
+      # lastrole = Userrole.order("created_at").last
+      # if !lastrole.manager.nil?
+      #   # Find out if this manager is an employee
+      #   userroles = Userrole.where("user_id=?", manager.id)
+      #   userroles.each do |urole|
+      #     if urole.role.name == 'Employee'
+      #       found = true
+      #       break
+      #     end
+      #   end
+      # end
+      # if !found
+      #   lastrole = Userrole.order("updated_at").last
+      #   if !lastrole.manager.nil?
+      #     # Find out if this manager is an employee
+      #     userroles = Userrole.where("user_id=?", manager.id)
+      #     userroles.each do |urole|
+      #       if urole.role.name == 'Employee'
+      #         found = true
+      #         break
+      #       end
+      #     end
+      #   end
+      # end
+      # if found 
+      #   errors.add(:manager, "An employee cannot be selected as manager")
+      # end
     end
 
 end
