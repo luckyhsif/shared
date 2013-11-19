@@ -159,8 +159,6 @@ class User < ActiveRecord::Base
     # puts "manager role: #{manager_role.name}"
     # puts "Subordinate: #{subordinate.name}" 
     # puts "subordinate role_name: #{subordinate_role_name}"
-    #return true if manager_role.name == 'Staff'
-    #return true if manager.type == 'Staff'
     if manager_role.name == 'Employee' 
       return false unless subordinate_role_name == 'Player'
       return subordinate.venue.has_employee?(manager)
@@ -177,8 +175,6 @@ class User < ActiveRecord::Base
       return false if subordinate.nil?     # This will hapen if the test case does not include an employee role type
     end
     managers = subordinate.managers
-    # puts "subordinate managers: #{managers.to_json}"
-    # puts "must include: #{manager.to_json}"
     return managers.include?(manager)
   end
 
