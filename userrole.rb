@@ -6,27 +6,9 @@ class Userrole < ActiveRecord::Base
 
   validate :employee_cannot_be_manager
 
-  def subordinate_roles
-    # e.g. self eq 'User A' + 'Country Distributor' + 
-    # Find user roles where UserA is the manager
-    #  'User B' + 'Master Distributor'
-    #  'User C' + 'Master Distributor'
-    #  'User D' + 'Regional Distributor'
-    # Find the most senior role in the list 
-    return nil
-    manager_role = self.role
-    manager = self.user
-    subordinate_role_type = nil
-  end
-
   def master_distributor_subordinates
-    # Find subordinates who are master distributors
-    senior_user = self.user
-    empty_list = []
     md_role_type = Role.find_by_name('Master Distributor')
-    return empty_list if md_role_type.nil?
-    subordinates = Userrole.where("role_id=? AND manager_id=?", md_role_type.id, senior_user.id)
-    return subordinates
+    return md_role_type.nil? ? [] : Userrole.where("role_id=? AND manager_id=?", md_role_type.id, self.user.id)
   end
 
   def regional_distributor_subordinates
