@@ -25,6 +25,14 @@ class Location < ActiveRecord::Base
     return Location.where("parent_id is NULL")
   end
 
+  def category
+    return 1 if self.type == 'Country'
+    return 4 if self.type == 'Venue'
+    return 2 if self.is_master_region 
+    return 3 if !self.is_master_region
+    nil
+  end
+
   def self.unallocated_root_locations
     root_locations = []
     Location.roots.each do |root|
