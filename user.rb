@@ -123,7 +123,7 @@ class User < ActiveRecord::Base
       venue = resp.location
       players.push(*venue.players)
     end
-    puts "employee_players - #{players.to_json}"
+    #puts "employee_players - #{players.to_json}"
     return players
   end
 

@@ -5,6 +5,14 @@ class Player < User
   validates_presence_of :venue
   has_many :accounts, foreign_key: :owner_id, dependent: :destroy
 
+  def agent
+    return self.venue.agent
+  end
+
+  def may_have_venue?(venue)
+    return self.agent_venues.include?(venue)
+  end
+
   def account(name, currency = Account::DEFAULT_CURRENCY)
     return self.accounts.where(name: name.to_s, currency: currency.to_s).first_or_create
   end
