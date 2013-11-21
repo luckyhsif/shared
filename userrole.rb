@@ -6,71 +6,71 @@ class Userrole < ActiveRecord::Base
 
   validate :employee_cannot_be_manager
 
+  def self.user_role_exists?(user, role)
+    ur = Userrole.where("user_id=? AND role_id=?", user.id, role.id)
+    ur.count > 0
+  end
+
+  def self.find(user, role)
+    ur = Userrole.where("user_id=? AND role_id=?", user.id, role.id)
+    return nil if ur.empty?
+    ur.first
+  end
+
   def master_distributor_subordinates
     md_role_type = Role.find_by_name('Master Distributor')
-    return md_role_type.nil? ? [] : Userrole.where("role_id=? AND manager_id=?", md_role_type.id, self.user.id)
+    master_roles = Userrole.where("role_id = ? AND manager_id = ?", md_role_type.id, self.user.id)
+    return master_roles
   end
 
   def regional_distributor_subordinates
-    senior_user = self.user
-    empty_list = []
     rd_role_type = Role.find_by_name('Regional Distributor')
-    return empty_list if rd_role_type.nil?
-    subordinates = Userrole.where("role_id=? AND manager_id=?", rd_role_type.id, senior_user.id)
+    regional_roles = Userrole.where("role_id = ? AND manager_id = ?", rd_role_type.id, self.user.id)
+    return regional_roles
   end
 
   def agent_subordinates
-    senior_user = self.user
-    empty_list = []
     agent_role_type = Role.find_by_name('Agent')
-    return empty_list if agent_role_type.nil?
-    subordinates = Userrole.where("role_id=? AND manager_id=?", agent_role_type.id, senior_user.id)
+    agent_roles = Userrole.where("role_id = ? AND manager_id = ?", agent_role_type.id, self.user.id)
+    return agent_roles    
   end
 
   def employee_subordinates
-    senior_user = self.user
-    empty_list = []
     employee_role_type = Role.find_by_name('Employee')
-    return empty_list if employee_role_type.nil?
-    subordinates = Userrole.where("role_id=? AND manager_id=?", employee_role_type.id, senior_user.id)
+    employee_roles = Userrole.where("role_id = ? AND manager_id = ?", employee_role_type.id, self.user.id)
+    return employee_roles
   end
 
   def most_senior_subordinates
     senior_role_type = self.role
-    #puts "Getting the most senior subordinates of user #{self.user.name} in the role of #{senior_role_type.name}"
     senior_user_role = self
     empty_list = []
     case senior_role_type.name
       when 'Country Distributor'
         #puts "\nRequesting the most senior subordinates of a country distributor"
-        # Are there any subordinate Master Distributor roles?
-        subordinates = senior_user_role.master_distributor_subordinates
-        return subordinates if !subordinates.empty?
-        # Are there any subordinate Regional Distributor roles?
-        subordinates = senior_user_role.regional_distributor_subordinates
-        return subordinates if !subordinates.empty?
-        # Are there any subordinate Agent roles?
-        subordinates = senior_user_role.agent_subordinates
+        subordinates = self.master_distributor_subordinates
+        #puts "The subordinates of Peter Cundis are: #{subordinates.to_json}"
+        return subordinates unless subordinates.empty?
+        subordinates = self.regional_distributor_subordinates
+        #puts "The subordinates of Peter Cundis are: #{subordinates.to_json}"
+        return subordinates unless subordinates.empty?
+        subordinates = self.agent_subordinates
+        #puts "The subordinates of Peter Cundis are: #{subordinates.to_json}"
         return subordinates
       when 'Master Distributor'
         #puts "\nRequesting the most senior subordinates of a master distributor"
-        # Are there any subordinate Regional Distributor roles?
-        subordinates = senior_user_role.regional_distributor_subordinates
-        return subordinates if !subordinates.empty?
-        # Are there any subordinate Agent roles?
-        subordinates = senior_user_role.agent_subordinates
-        return subordinates        
-        # Are there any subordinate Employee roles?
-        subordinates = senior_user_role.employee_subordinates
+        subordinates = self.regional_distributor_subordinates
+        return subordinates unless subordinates.empty?
+        subordinates = self.agent_subordinates
         return subordinates
       when 'Regional Distributor'
         #puts "\nRequesting the most senior subordinates of a regional distributor"
-        # Are there any subordinate Agent roles?
         subordinates = senior_user_role.agent_subordinates
         return subordinates
       when 'Agent'
         # Are there any subordinate Employee roles?
         subordinates = senior_user_role.employee_subordinates
+        #puts "The subordinates of Lisa are: #{subordinates.to_json}"
         return subordinates
       when 'Employee'
         # Are there any subordinate Player roles?
