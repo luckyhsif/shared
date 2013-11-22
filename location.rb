@@ -33,6 +33,13 @@ class Location < ActiveRecord::Base
     nil
   end
 
+  def subordinate_category
+    return 2 if self.type == 'Country'
+    return 3 if self.is_master_region 
+    return 4 if !self.is_master_region
+    nil
+  end    
+
   def self.unallocated_root_locations
     root_locations = []
     Location.roots.each do |root|
