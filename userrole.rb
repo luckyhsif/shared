@@ -81,6 +81,15 @@ class Userrole < ActiveRecord::Base
     end
   end
 
+  def locations
+    responsibilities = Responsibility.where("user_id=? AND role_id=?", self.user.id, self.role.id)
+    return [] if responsibilities.empty?
+    # responsibilities.each do |resp|
+    #   locations << resp.location
+    # end
+    locations = responsibilities.map{ |resp| resp.location}
+  end
+
   private
 
     def employee_cannot_be_manager

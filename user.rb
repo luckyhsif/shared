@@ -10,6 +10,7 @@ class User < ActiveRecord::Base
   has_many :managers, through: :userroles, foreign_key: :manager_id
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
+
   validates :email, :presence   => true,
                     :format     => { :with => email_regex },
                     :uniqueness => { :case_sensitive => false }
@@ -24,6 +25,7 @@ class User < ActiveRecord::Base
             {count: 5, user_type: 'MasterDistributor'},
             {count: 6, user_type: 'CountryDistributor'},
             {count: 7, user_type: 'Staff'}]
+          
 
   def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
     # who is requesting the action? employees or agents and do they have permission to
@@ -138,12 +140,9 @@ class User < ActiveRecord::Base
     return agent
   end
 
-  def allowed_to_maintain?(user)   #tested
+  def manages_user?(user)   #tested
     subordinate = user
     manager = self
-    # puts "allowed_to_maintain?(user)"
-    # puts "Manager: #{manager.name}" 
-    # puts "Subordinate: #{subordinate.name}" 
     return false if subordinate == manager
     return false if manager.active == false
     return false if manager.type == 'Player'
@@ -155,7 +154,7 @@ class User < ActiveRecord::Base
       subordinate_role = subordinate.most_senior_role
       subordinate_role_name = subordinate_role.name
     end
-    # puts "allowed_to_maintain?(user) - all roles"
+    # puts "manages_user?(user) - all roles"
     # puts "Manager: #{manager.name}" 
     # puts "manager role: #{manager_role.name}"
     # puts "Subordinate: #{subordinate.name}" 
@@ -177,6 +176,27 @@ class User < ActiveRecord::Base
     end
     managers = subordinate.managers
     return managers.include?(manager)
+  end
+
+  def access_level_for_location(location)
+    return 'NONE' if location.nil?
+    return 'ALL' if self.is_a?(Staff)
+    return 'NONE' if self.is_a?(Player)
+    responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, location.id)
+    return 'NONE' if responsibilities.empty?
+    roles = responsibilities.map{ |resp| resp.role.name }
+    case Location::CATEGORY_TYPES[location.category]
+    when 'master'
+      return 'ALL' if roles.include?('Country Distributor')
+      return 'NONE'
+    when 'region'
+      return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor')
+      return 'NONE'
+    when 'venue'
+      return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor') || roles.include?('Regional Distributor')
+      return 'VIEW' if roles.include?('Agent')
+    end
+    'NONE'
   end
 
   def managers 

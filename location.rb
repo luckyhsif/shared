@@ -14,6 +14,8 @@ class Location < ActiveRecord::Base
             :parent_may_not_be_venue
   before_save :may_not_be_a_parent_in_child_hierarchy
 
+  CATEGORY_TYPES  = ["country", "master", "region", "venue"]
+
   def root
     # return the root location, ie the parent at the top (bottom?) of the Location heirarchy
     return self if self.parent == nil
@@ -26,18 +28,16 @@ class Location < ActiveRecord::Base
   end
 
   def category
-    return 1 if self.type == 'Country'
-    return 4 if self.type == 'Venue'
-    return 2 if self.is_master_region 
-    return 3 if !self.is_master_region
-    nil
+    return 0 if self.type == 'Country'
+    return 3 if self.type == 'Venue'
+    return 1 if self.is_master_region 
+    return 2
   end
 
   def subordinate_category
-    return 2 if self.type == 'Country'
-    return 3 if self.is_master_region 
-    return 4 if !self.is_master_region
-    nil
+    return 1 if self.type == 'Country'
+    return 2 if self.is_master_region 
+    return 3
   end    
 
   def self.unallocated_root_locations
