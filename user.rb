@@ -185,14 +185,14 @@ class User < ActiveRecord::Base
     responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, location.id)
     return 'NONE' if responsibilities.empty?
     roles = responsibilities.map{ |resp| resp.role.name }
-    case Location::CATEGORY_TYPES[location.category]
-    when 'master'
+    case location.type
+    when 'MasterRegion'
       return 'ALL' if roles.include?('Country Distributor')
       return 'NONE'
-    when 'region'
+    when 'Region'
       return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor')
       return 'NONE'
-    when 'venue'
+    when 'Venue'
       return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor') || roles.include?('Regional Distributor')
       return 'VIEW' if roles.include?('Agent')
     end
@@ -421,6 +421,46 @@ class User < ActiveRecord::Base
       manager_locations.push(*locs) unless locs == nil
     end
     return manager_locations
+  end
+
+  def countries
+    responsibilities = Responsibility.where("user_id=?", self)
+    return [] if responsibilities.empty?
+    locations = []
+    responsibilities.each do |resp|
+      locations << resp.location if resp.location.is_a?(Country)
+    end
+    return locations
+  end  
+
+  def master_regions
+    responsibilities = Responsibility.where("user_id=?", self.id)
+    return [] if responsibilities.empty?
+    locations = []
+    responsibilities.each do |resp|
+      locations << resp.location if resp.location.is_a?(MasterRegion)
+    end
+    return locations
+  end
+
+  def regions
+    responsibilities = Responsibility.where("user_id=?", self.id)
+    return [] if responsibilities.empty?
+    locations = []
+    responsibilities.each do |resp|
+      locations << resp.location if resp.location.is_a?(Region)
+    end
+    return locations
+  end
+
+  def venues
+    responsibilities = Responsibility.where("user_id=?", self.id)
+    return [] if responsibilities.empty?
+    locations = []
+    responsibilities.each do |resp|
+      locations << resp.location if resp.location.is_a?(Venue)
+    end
+    return locations
   end
 
   def roles

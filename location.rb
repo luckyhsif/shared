@@ -14,7 +14,7 @@ class Location < ActiveRecord::Base
             :parent_may_not_be_venue
   before_save :may_not_be_a_parent_in_child_hierarchy
 
-  CATEGORY_TYPES  = ["country", "master", "region", "venue"]
+  LOCATION_TYPES  = ["Country", "MasterRegion", "Region", "Venue"]
 
   def root
     # return the root location, ie the parent at the top (bottom?) of the Location heirarchy
@@ -27,17 +27,11 @@ class Location < ActiveRecord::Base
     return Location.where("parent_id is NULL")
   end
 
-  def category
-    return 0 if self.type == 'Country'
-    return 3 if self.type == 'Venue'
-    return 1 if self.is_master_region 
-    return 2
-  end
-
   def subordinate_category
-    return 1 if self.type == 'Country'
-    return 2 if self.is_master_region 
-    return 3
+    return 'MasterRegion' if self.is_a?(Country)
+    return 'Region' if self.as_a?(MasterRegion)
+    return 'Venue' if self.as_a?(Region)
+    nil
   end    
 
   def self.unallocated_root_locations
@@ -56,6 +50,16 @@ class Location < ActiveRecord::Base
   def self.master_locations(country)
     return country.children
   end
+
+  # def self.manager_names
+  #   managers = Hash.new
+  #   cd_role_type = Role.find_by_name('Country Distributor')
+  #   Country.all.each do |country|
+  #     resps = Responsibility.where("location_id=?", country.id)
+  #     managers[country.id] = resps.first.user.name unless resps.empty?
+  #   end
+  #   return managers
+  # end
 
   def self.regional_locations(country)
     regional_locations = []
