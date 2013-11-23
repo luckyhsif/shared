@@ -89,7 +89,9 @@ class Location < ActiveRecord::Base
   end
 
   def manager
-    self.country_distributor || self.master_distributor || self.regional_distributor || self.agent || nil
+    responsibilities = Responsibility.where("location_id=?", self.id)
+    return nil if responsibilities.empty?
+    return responsibilities.first.user
   end
 
   def country_location?

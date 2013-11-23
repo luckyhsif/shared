@@ -178,25 +178,39 @@ class User < ActiveRecord::Base
     return managers.include?(manager)
   end
 
-  def access_level_for_location(location)
-    return 'NONE' if location.nil?
+
+  # Determine the access level that self has for this child location
+  def access_level_for_location(child_location)
+    return 'NONE' if child_location.nil?
     return 'ALL' if self.is_a?(Staff)
     return 'NONE' if self.is_a?(Player)
-    responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, location.id)
+    responsibilities = Responsibility.where("user_id=?", self.id)
+    # If the query does no results, self has no responsibility for any location
     return 'NONE' if responsibilities.empty?
-    roles = responsibilities.map{ |resp| resp.role.name }
-    case location.type
-    when 'MasterRegion'
-      return 'ALL' if roles.include?('Country Distributor')
-      return 'NONE'
-    when 'Region'
-      return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor')
-      return 'NONE'
-    when 'Venue'
-      return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor') || roles.include?('Regional Distributor')
-      return 'VIEW' if roles.include?('Agent')
+    child_location_parent_ids = child_location.parent_location_ids
+    # Determine if self has a responsibility for one of its parent locations
+    responsibilities.each do |resp|
+      return 'ALL' if child_location_parent_ids.include?(resp.location.id)
     end
-    'NONE'
+    responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, child_location.id)
+    return responsibilities.empty? ? 'NONE' : 'VIEW'
+
+    # puts responsibilities.to_json
+    # roles = responsibilities.map{ |resp| resp.role.name }
+    # case location.type
+    # when 'MasterRegion'
+    #   return 'ALL' if roles.include?('Country Distributor')
+    #   return 'VIEW' if roles.include?('Master Distributor')
+    #   return 'NONE'
+    # when 'Region'
+    #   return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor')
+    #   return 'VIEW' if roles.include?('Regional Distributor')
+    #   return 'NONE'
+    # when 'Venue'
+    #   return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor') || roles.include?('Regional Distributor')
+    #   return 'VIEW' if roles.include?('Agent') || roles.include?('Employee') 
+    # end
+    # 'NONE'
   end
 
   def managers 
