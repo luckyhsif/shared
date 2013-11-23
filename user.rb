@@ -244,30 +244,23 @@ class User < ActiveRecord::Base
 
   def manager(location)
     # Returns the immediate manager of the current user
-    puts "Entering User - manager, self: #{self.to_json}"
+    #puts "Entering User - manager, self: #{self.to_json}"
     if self.type == 'Player'
       #role = Role.find_by_name('Agent')   # The role is derived from the responsibility
-      puts "\n User - manager(loc) - It is a Player"
       responsibilities = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, location.id]
       # The specified location can have only one Agent
       # The agent is the manager of the current player
       manager = User.find_by_id(responsibilities.first.user_id)
-      puts "The player's manager is: #{manager.to_json}"
     else  # It is a User
       puts "\n User - manager(loc) - It is a User"
       #responsibilities = Responsibility.find_by_sql ["SELECT id, role_id FROM responsibilities r WHERE r.user_id = ? AND r.location_id = ?", self.id, location.id]
       responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, location.id)
       # The current user will have one responsibility for these criteria
-      # e.g. user = 'Lisa', role = 'Agent', location = 'Hall 1', manager = 'Greg'
-      #      user = 'Lisa', role = 'RD', location = 'Hall 1', manager = 'George'
       responsibility = Responsibility.find_by_id(responsibilities.first.id)
       if !responsibility
-        puts "\n User - manager(loc), unexpected error: no manager"
         return nil
       end
-      puts "\n User - manager(loc) - Responsibility: #{responsibility.to_json}"
       manager = responsibility.manager
-      puts "The user's manager is: #{manager.to_json}"
     end
     return manager
   end

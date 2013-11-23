@@ -18,9 +18,7 @@ class Venue < Location
   end
 
   def agent
-    # Find the agent responsible for the current venue
     role = Role.find_by_name('Agent')
-    #puts "\nVenue - agent, role: #{role.to_json}"
     rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, self.id]
     agent = User.find_by_id(rlist.first.user_id)
     return agent
@@ -30,6 +28,27 @@ class Venue < Location
     role = Role.find_by_name('Employee')
     rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, self.id]
     return rlist.count > 0
+  end
+
+  def managers_for_sublocations
+    managers = Hash.new
+    return managers
+  end
+
+  def self.title_for_lists
+    return 't.location.venue.plural'
+  end
+
+  def self.title_for_location_names
+    return 't.location.venue.location_heading'
+  end
+
+  def self.title_for_managers
+    return 't.location.venue.manager_heading'
+  end
+
+  def self.buttons_for_children_list
+    return 't.location.venue.add'
   end
 
   private

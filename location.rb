@@ -27,7 +27,7 @@ class Location < ActiveRecord::Base
     return Location.where("parent_id is NULL")
   end
 
-  def subordinate_category
+  def subordinate_type
     return 'MasterRegion' if self.is_a?(Country)
     return 'Region' if self.as_a?(MasterRegion)
     return 'Venue' if self.as_a?(Region)
@@ -51,15 +51,20 @@ class Location < ActiveRecord::Base
     return country.children
   end
 
-  # def self.manager_names
-  #   managers = Hash.new
-  #   cd_role_type = Role.find_by_name('Country Distributor')
-  #   Country.all.each do |country|
-  #     resps = Responsibility.where("location_id=?", country.id)
-  #     managers[country.id] = resps.first.user.name unless resps.empty?
-  #   end
-  #   return managers
-  # end
+  
+  def subordinate_manager_names
+    managers = Hash.new
+    # If self type eq Country, then find Master Distributors for the child Master Regions
+    #   providing a lookup  managers[master-region.id] = manager_name
+    # If self type eq MasterRegion, then find Region Distributors for the chil
+
+    cd_role_type = Role.find_by_name('Country Distributor')
+    Country.all.each do |country|
+      resps = Responsibility.where("location_id=?", country.id)
+      managers[country.id] = resps.first.user.name unless resps.empty?
+    end
+    return managers
+  end
 
   def self.regional_locations(country)
     regional_locations = []

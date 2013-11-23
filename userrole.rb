@@ -47,33 +47,24 @@ class Userrole < ActiveRecord::Base
     empty_list = []
     case senior_role_type.name
       when 'Country Distributor'
-        #puts "\nRequesting the most senior subordinates of a country distributor"
         subordinates = self.master_distributor_subordinates
-        #puts "The subordinates of Peter Cundis are: #{subordinates.to_json}"
         return subordinates unless subordinates.empty?
         subordinates = self.regional_distributor_subordinates
-        #puts "The subordinates of Peter Cundis are: #{subordinates.to_json}"
         return subordinates unless subordinates.empty?
         subordinates = self.agent_subordinates
-        #puts "The subordinates of Peter Cundis are: #{subordinates.to_json}"
         return subordinates
       when 'Master Distributor'
-        #puts "\nRequesting the most senior subordinates of a master distributor"
         subordinates = self.regional_distributor_subordinates
         return subordinates unless subordinates.empty?
         subordinates = self.agent_subordinates
         return subordinates
       when 'Regional Distributor'
-        #puts "\nRequesting the most senior subordinates of a regional distributor"
         subordinates = senior_user_role.agent_subordinates
         return subordinates
       when 'Agent'
-        # Are there any subordinate Employee roles?
         subordinates = senior_user_role.employee_subordinates
-        #puts "The subordinates of Lisa are: #{subordinates.to_json}"
         return subordinates
       when 'Employee'
-        # Are there any subordinate Player roles?
         subordinates = senior_user_role.user.employee_players
         return subordinates
       else
@@ -90,14 +81,14 @@ class Userrole < ActiveRecord::Base
     locations = responsibilities.map{ |resp| resp.location}
   end
 
-  def manager_names_per_location
-    manager_names = Hash.new
+  def managers_per_location
+    managers = Hash.new
     responsibilities = Responsibility.where("user_id=? AND role_id=?", self.user.id, self.role.id)
     return [] if responsibilities.empty?
     responsibilities.each do |resp|
-      manager_names[resp.location.id] = resp.user.name
+      managers[resp.location.id] = resp.user
     end
-    return manager_names
+    return managers
   end
 
   private
