@@ -14,8 +14,6 @@ class Location < ActiveRecord::Base
             :parent_may_not_be_venue
   before_save :may_not_be_a_parent_in_child_hierarchy
 
-  LOCATION_TYPES  = ["Country", "MasterRegion", "Region", "Venue"]
-
   def root
     # return the root location, ie the parent at the top (bottom?) of the Location heirarchy
     return self if self.parent == nil
@@ -50,21 +48,20 @@ class Location < ActiveRecord::Base
   def self.master_locations(country)
     return country.children
   end
-
   
-  def subordinate_manager_names
-    managers = Hash.new
-    # If self type eq Country, then find Master Distributors for the child Master Regions
-    #   providing a lookup  managers[master-region.id] = manager_name
-    # If self type eq MasterRegion, then find Region Distributors for the chil
+  # def subordinate_manager_names
+  #   managers = Hash.new
+  #   # If self type eq Country, then find Master Distributors for the child Master Regions
+  #   #   providing a lookup  managers[master-region.id] = manager_name
+  #   # If self type eq MasterRegion, then find Region Distributors for the chil
 
-    cd_role_type = Role.find_by_name('Country Distributor')
-    Country.all.each do |country|
-      resps = Responsibility.where("location_id=?", country.id)
-      managers[country.id] = resps.first.user.name unless resps.empty?
-    end
-    return managers
-  end
+  #   cd_role_type = Role.find_by_name('Country Distributor')
+  #   Country.all.each do |country|
+  #     resps = Responsibility.where("location_id=?", country.id)
+  #     managers[country.id] = resps.first.user.name unless resps.empty?
+  #   end
+  #   return managers
+  # end
 
   def self.regional_locations(country)
     regional_locations = []

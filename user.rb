@@ -178,7 +178,6 @@ class User < ActiveRecord::Base
     return managers.include?(manager)
   end
 
-
   # Determine the access level that self has for this child location
   def access_level_for_location(child_location)
     return 'NONE' if child_location.nil?
@@ -187,30 +186,17 @@ class User < ActiveRecord::Base
     responsibilities = Responsibility.where("user_id=?", self.id)
     # If the query does no results, self has no responsibility for any location
     return 'NONE' if responsibilities.empty?
-    child_location_parent_ids = child_location.parent_location_ids
-    # Determine if self has a responsibility for one of its parent locations
-    responsibilities.each do |resp|
-      return 'ALL' if child_location_parent_ids.include?(resp.location.id)
+    #puts "#{self.name} has direct responsibilities for these locations:"
+    locids = responsibilities.map { |r| r.location.id }
+    #puts locids.to_json
+    # If a location has directly been assigned to self, it may only be viewed
+    return 'VIEW' if locids.include?(child_location.id)
+    child_loc_parent_ids = child_location.parent_location_ids
+    #puts "The parent ids of child id #{child_location.id} are #{child_loc_parent_ids.to_json}"
+    locids.each do |locid|
+      return 'ALL' if child_loc_parent_ids.include?(locid)
     end
-    responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, child_location.id)
-    return responsibilities.empty? ? 'NONE' : 'VIEW'
-
-    # puts responsibilities.to_json
-    # roles = responsibilities.map{ |resp| resp.role.name }
-    # case location.type
-    # when 'MasterRegion'
-    #   return 'ALL' if roles.include?('Country Distributor')
-    #   return 'VIEW' if roles.include?('Master Distributor')
-    #   return 'NONE'
-    # when 'Region'
-    #   return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor')
-    #   return 'VIEW' if roles.include?('Regional Distributor')
-    #   return 'NONE'
-    # when 'Venue'
-    #   return 'ALL' if roles.include?('Country Distributor') || roles.include?('Master Distributor') || roles.include?('Regional Distributor')
-    #   return 'VIEW' if roles.include?('Agent') || roles.include?('Employee') 
-    # end
-    # 'NONE'
+    'NONE'
   end
 
   def managers 
@@ -385,28 +371,6 @@ class User < ActiveRecord::Base
     urlist = Userrole.where("manager_id = ?", self)
     return nil unless urlist && urlist.count > 0
     users = User.find(urlist.map(&:user_id).uniq)
-  end
-
-  def is_subordinate_of?(user, location)    #  not used - still working on this
-    subordinate = self
-    puts "\n (1) is_subordinate_of? testing self: #{subordinate.to_json}"
-    puts "\n (2) is_subordinate_of? testing manager: #{user.to_json}"
-    if self.type == 'Player'
-      puts "\n 1 is_subordinate_of, venue #{subordinate.venue.to_json}"
-      manager = subordinate.venue.agent
-    else
-      puts "\n 2 is_subordinate_of location: #{location.to_json}"
-      manager = subordinate.manager(location)
-    end
-    puts "\n self manager: #{manager.to_json}"      # Lisa Agent
-    puts "\n manager: #{user.to_json}"              # Harry Employee
-    while manager != nil
-      return true if manager == user
-      puts "\n manager != user"
-      manager = manager.manager(location)
-      puts "\n Try with manager: #{manager.to_json}"
-    end
-    false
   end
 
   # def user_level(user)   # A user no longer has a level. Users no have responsibiity levels
