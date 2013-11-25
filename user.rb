@@ -81,9 +81,13 @@ class User < ActiveRecord::Base
   
   def agent_venues
     venues = []
-    role = Role.find_by_name('Agent')
-    rlist = Responsibility.where("user_id=? AND role_id=?", self.id, role.id)
-    venues = Venue.find(rlist.map(&:location_id).uniq)
+    agent_role_type = Role.find_by_name('Agent')
+    # puts "No agent role type!" if agent_role_type.nil?
+    # puts "agent_venues - role type: #{agent_role_type.to_json}"
+    rlist = Responsibility.where("user_id=? AND role_id=?", self.id, agent_role_type.id)
+    # puts "\nagent_venues - rlist: #{rlist.to_json}" unless rlist.empty?
+    venues = Venue.find(rlist.map(&:location_id).uniq) unless rlist.empty?
+    return venues
   end
 
   def employee_venues
@@ -145,13 +149,15 @@ class User < ActiveRecord::Base
     manager = self
     return false if subordinate == manager
     return false if manager.active == false
-    return false if manager.type == 'Player'
-    return true if manager.type == 'Staff'
+    return false if manager.is_a?(Player)
+    return true if manager.is_a?(Staff)
     manager_role = manager.most_senior_role
-    if subordinate.type == 'Player'
+    if subordinate.is_a?(Player)
       subordinate_role_name = 'Player'
     else
       subordinate_role = subordinate.most_senior_role
+      return false if subordinate_role.nil?  # unexpected error
+      #puts "subordinate_role: #{subordinate_role.to_json}"
       subordinate_role_name = subordinate_role.name
     end
     # puts "manages_user?(user) - all roles"
@@ -160,10 +166,12 @@ class User < ActiveRecord::Base
     # puts "Subordinate: #{subordinate.name}" 
     # puts "subordinate role_name: #{subordinate_role_name}"
     if manager_role.name == 'Employee' 
-      return false unless subordinate_role_name == 'Player'
+      #puts "manages_user?(user) - manager(#{manager.name}) is an employee"
+      return false unless subordinate.is_a?(Player)
       return subordinate.venue.has_employee?(manager)
     end
     if manager_role.name == 'Agent'
+      #puts "manages_user?(user) - manager(#{manager.name}) is an agent"
       return manager.agent_venues.include?(subordinate.venue) if subordinate_role_name == 'Player'
       return manager.agent_employees.include?(subordinate) if subordinate_role_name == 'Employee'
       return false
@@ -224,9 +232,11 @@ class User < ActiveRecord::Base
     return managers
   end
 
-  def manager_of?(user)
-    user.managers.include?(self)
-  end
+  # def manager_of?(user)
+  #   return false unless user_level(self) > user_level(user)
+  #   return true if self.is_a?(Staff)
+  #   user.managers.include?(self)
+  # end
 
   def manager(location)
     # Returns the immediate manager of the current user
@@ -348,12 +358,19 @@ class User < ActiveRecord::Base
   end
 
   def most_senior_role  
-    if self.class.name == 'Player'
+    if self.is_a?(Player)
       role = Role.find_by_name('Player')
+      puts "Error - player role not found" if role.nil?
       return role
     end
-    if self.class.name == 'Staff'
+    if self.is_a?(Staff)
       role = Role.find_by_name('Staff')
+      puts "Error - staff role not found" if role.nil?
+      return role
+    end
+    if self.is_employee?
+      role = Role.find_by_name('Employee')
+      puts "Error - employee role not found" if role.nil?
       return role
     end
     userroles = Userrole.where("user_id=?", self)
