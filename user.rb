@@ -207,6 +207,17 @@ class User < ActiveRecord::Base
     'NONE'
   end
 
+  # Find the immediate manager of self
+  def manager
+    return self.agent_of_player if self.is_a?(Player)
+    return nil if self.is_a?(Staff)
+    own_most_senior_role_type = self.most_senior_role
+    return nil if own_most_senior_role_type.nil?
+    user_role = Userrole.where("user_id=? AND role_id=?", self.id, own_most_senior_role_type.id)
+    return nil if user_role.nil?
+    user_role.manager
+  end
+
   def managers 
     managers = []
     if self.type == 'Player'
@@ -238,28 +249,28 @@ class User < ActiveRecord::Base
   #   user.managers.include?(self)
   # end
 
-  def manager(location)
-    # Returns the immediate manager of the current user
-    #puts "Entering User - manager, self: #{self.to_json}"
-    if self.type == 'Player'
-      #role = Role.find_by_name('Agent')   # The role is derived from the responsibility
-      responsibilities = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, location.id]
-      # The specified location can have only one Agent
-      # The agent is the manager of the current player
-      manager = User.find_by_id(responsibilities.first.user_id)
-    else  # It is a User
-      puts "\n User - manager(loc) - It is a User"
-      #responsibilities = Responsibility.find_by_sql ["SELECT id, role_id FROM responsibilities r WHERE r.user_id = ? AND r.location_id = ?", self.id, location.id]
-      responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, location.id)
-      # The current user will have one responsibility for these criteria
-      responsibility = Responsibility.find_by_id(responsibilities.first.id)
-      if !responsibility
-        return nil
-      end
-      manager = responsibility.manager
-    end
-    return manager
-  end
+  # def manager(location)
+  #   # Returns the immediate manager of the current user
+  #   #puts "Entering User - manager, self: #{self.to_json}"
+  #   if self.type == 'Player'
+  #     #role = Role.find_by_name('Agent')   # The role is derived from the responsibility
+  #     responsibilities = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, location.id]
+  #     # The specified location can have only one Agent
+  #     # The agent is the manager of the current player
+  #     manager = User.find_by_id(responsibilities.first.user_id)
+  #   else  # It is a User
+  #     puts "\n User - manager(loc) - It is a User"
+  #     #responsibilities = Responsibility.find_by_sql ["SELECT id, role_id FROM responsibilities r WHERE r.user_id = ? AND r.location_id = ?", self.id, location.id]
+  #     responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, location.id)
+  #     # The current user will have one responsibility for these criteria
+  #     responsibility = Responsibility.find_by_id(responsibilities.first.id)
+  #     if !responsibility
+  #       return nil
+  #     end
+  #     manager = responsibility.manager
+  #   end
+  #   return manager
+  # end
 
  # include BCrypt
   def password
