@@ -82,10 +82,7 @@ class User < ActiveRecord::Base
   def agent_venues
     venues = []
     agent_role_type = Role.find_by_name('Agent')
-    # puts "No agent role type!" if agent_role_type.nil?
-    # puts "agent_venues - role type: #{agent_role_type.to_json}"
     rlist = Responsibility.where("user_id=? AND role_id=?", self.id, agent_role_type.id)
-    # puts "\nagent_venues - rlist: #{rlist.to_json}" unless rlist.empty?
     venues = Venue.find(rlist.map(&:location_id).uniq) unless rlist.empty?
     return venues
   end
