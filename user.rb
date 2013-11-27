@@ -7,7 +7,7 @@ class User < ActiveRecord::Base
   has_many :messages, foreign_key: :sender_id
   has_many :userroles, foreign_key: :user_id
   has_many :roles, through: :userroles
-  has_many :managers, through: :userroles, foreign_key: :manager_id
+#  has_many :managers, through: :userroles, foreign_key: :manager_id
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
 
@@ -26,6 +26,10 @@ class User < ActiveRecord::Base
             {count: 6, user_type: 'CountryDistributor'},
             {count: 7, user_type: 'Staff'}]
           
+
+  def user_roles
+    urs = Userrole.where("user_id=?", self.id)
+  end
 
   def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
     # who is requesting the action? employees or agents and do they have permission to
