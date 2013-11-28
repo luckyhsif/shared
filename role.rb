@@ -1,7 +1,5 @@
 class Role < ActiveRecord::Base
 
-  has_many :grantable_permission_types, class_name: 'PermissionType', foreign_key: :grantable_role_type_id
-  has_many :receivable_permission_types, class_name: 'PermissionType', foreign_key: :receivable_role_type_id
   has_one :parent, class_name: 'Role', foreign_key: :parent_id
   # has_and_belongs_to_many :grantable_permissions, class_name: 'Permission', 
   #                                                 join_table: 'grantable_permissions_roles', 
@@ -25,4 +23,19 @@ class Role < ActiveRecord::Base
     return 'Player' if self.name == 'Employee'
     return nil
   end
+
+  def next_senior_role_type
+    higher_level = self.level + 1
+    return nil if lower_level > 7
+    role = Role.find_by_sql ["SELECT * FROM roles WHERE roles.level = ?", higher_level]
+    return role.first
+  end
+
+  def next_junior_role_type
+    lower_level = self.level - 1
+    return nil if lower_level < 1
+    role = Role.find_by_sql ["SELECT * FROM roles WHERE roles.level = ?", lower_level]
+    return role.first
+  end
+
 end

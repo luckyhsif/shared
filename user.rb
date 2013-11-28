@@ -7,7 +7,7 @@ class User < ActiveRecord::Base
   has_many :messages, foreign_key: :sender_id
   has_many :userroles, foreign_key: :user_id
   has_many :roles, through: :userroles
-#  has_many :managers, through: :userroles, foreign_key: :manager_id
+  # has_many :managers, through: :userroles, foreign_key: :manager_id
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
 
@@ -26,9 +26,22 @@ class User < ActiveRecord::Base
             {count: 6, user_type: 'CountryDistributor'},
             {count: 7, user_type: 'Staff'}]
           
+  def self.search(search)
+    users = find_by_sql ["SELECT * FROM users WHERE name LIKE ? ORDER BY users.name ASC", "%#{search}%"]
+  end
 
   def user_roles
     urs = Userrole.where("user_id=?", self.id)
+  end
+
+  def user_role_types_sorted
+    urtypes = self.user_roles.map { |urole| urole.role }
+    urtypes.sort! { |a,b| a.level <=> b.level }
+  end
+
+  def next_available_role_type
+    existing_roles = self.user_roles.map(&:role_id).uniq
+    #not yet completed
   end
 
   def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
@@ -213,10 +226,11 @@ class User < ActiveRecord::Base
     return self.agent_of_player if self.is_a?(Player)
     return nil if self.is_a?(Staff)
     own_most_senior_role_type = self.most_senior_role
+    puts "User - manager - own_most_senior_role_type: #{own_most_senior_role_type.to_json}"
     return nil if own_most_senior_role_type.nil?
     user_role = Userrole.where("user_id=? AND role_id=?", self.id, own_most_senior_role_type.id)
     return nil if user_role.nil?
-    user_role.manager
+    user_role.first.manager
   end
 
   def managers 

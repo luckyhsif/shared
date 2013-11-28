@@ -1,6 +1,6 @@
 class Userrole < ActiveRecord::Base
   #self.table_name = 'userroles'
-  belongs_to :user
+  belongs_to :user     #, class_name: 'User', primary_key: user_id
   belongs_to :role
   belongs_to :manager, class_name: 'User'
 
@@ -14,6 +14,7 @@ class Userrole < ActiveRecord::Base
   def self.find(user, role)
     ur = Userrole.where("user_id=? AND role_id=?", user.id, role.id)
     return nil if ur.empty?
+    #puts "Userrole find: #{ur.to_json}"
     ur.first
   end
 
