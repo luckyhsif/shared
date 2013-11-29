@@ -34,6 +34,77 @@ class User < ActiveRecord::Base
     urs = Userrole.where("user_id=?", self.id)
   end
 
+  def self.search(role_id, enquirer, search)
+    user_ids = find_by_sql ["SELECT u.id FROM users u WHERE u.name LIKE ?", "%#{search}%"]
+    puts "The id collection is #{user_ids.to_json}"
+    role = Role.find_by_id(role_id)
+    idlist = []
+    user = nil
+    user_ids.each do |uid|
+      case role.name
+      when 'Player'
+        user = Player.find_by_id(uid)
+        if user 
+          managers = user.managers
+          puts "The Player's managers are: #{managers.to_json}"
+          idlist << uid if user && user.is_a?(Player) && (enquirer.is_a?(Staff) || managers.include?(enquirer))
+        end
+      when 'Employee'
+        user = User.find_by_id(uid)
+        managers = user.managers
+        idlist << uid if user && user.is_employee? && (enquirer.is_a?(Staff) || managers.include?(enquirer))
+      when 'Agent'
+        puts "An Agent has been supplied"
+        user = User.find_by_id(uid)
+        if user && user.is_agent?
+          puts user.to_json
+          if enquirer.is_a?(Staff) 
+            idlist << uid
+          else
+            managers = user.managers
+            idlist << uid if managers.include?(enquirer)
+          end
+        end
+      when 'Regional Distributor'
+        user = User.find_by_id(uid)
+        if user && user.is_regional_distributor?
+          if enquirer.is_a?(Staff) 
+            idlist << uid
+          else
+            managers = user.managers
+            idlist << uid if managers.include?(enquirer)
+          end
+        end
+      when 'Master Distributor'
+        user = User.find_by_id(uid)
+        if user && user.is_master_distributor?
+          if enquirer.is_a?(Staff) 
+            idlist << uid
+          else
+            managers = user.managers
+            idlist << uid if managers.include?(enquirer)
+          end
+        end
+      when 'Country Distributor'
+        user = User.find_by_id(uid)
+        if user && user.is_country_distributor?
+          if enquirer.is_a?(Staff) 
+            idlist << uid
+          else
+            managers = user.managers
+            idlist << uid if managers.include?(enquirer)
+          end
+        end
+      when 'Staff'
+        user = Staff.find_by_id(uid)
+        idlist << uid if user && enquirer.is_a?(Staff)
+      end
+    end
+    # cds = User.find(rlist.map(&:user_id).uniq)
+    users = idlist.map { |id| User.find_by_id(id) }
+    users.sort! { |a,b| a.name <=> b.name }
+  end
+
   def user_role_types_sorted
     urtypes = self.user_roles.map { |urole| urole.role }
     urtypes.sort! { |a,b| a.level <=> b.level }
@@ -80,14 +151,36 @@ class User < ActiveRecord::Base
 
   def is_employee?
     employee_role_type = Role.find_by_name('Employee')
-    rlist = Responsibility.where("role_id=? AND user_id=?", employee_role_type, self)
+    uroles = Userrole.where("role_id=? AND user_id=?", employee_role_type.id, self.id)
+    return true if uroles.count > 0
+    rlist = Responsibility.where("role_id=? AND user_id=?", employee_role_type.id, self.id)
     return rlist.count > 0
   end
 
   def is_agent? 
     agent_role_type = Role.find_by_name('Agent')
-    rlist = Responsibility.where("role_id=? AND user_id=?", agent_role_type, self)
+    uroles = Userrole.where("role_id=? AND user_id=?", agent_role_type.id, self.id)
+    return true if uroles.count > 0
+    rlist = Responsibility.where("role_id=? AND user_id=?", agent_role_type.id, self.id)
     return rlist.count > 0
+  end
+
+  def is_regional_distributor?
+    rd_role_type = Role.find_by_name('Regional Distributor')
+    uroles = Userrole.where("role_id=? AND user_id=?", rd_role_type.id, self.id)
+    return uroles.count > 0
+  end
+
+  def is_master_distributor?
+    md_role_type = Role.find_by_name('Master Distributor')
+    uroles = Userrole.where("role_id=? AND user_id=?", md_role_type.id, self.id)
+    return uroles.count > 0
+  end
+
+  def is_country_distributor?
+    cd_role_type = Role.find_by_name('Country Distributor')
+    uroles = Userrole.where("role_id=? AND user_id=?", cd_role_type.id, self.id)
+    return uroles.count > 0
   end
 
   def is_employee_at_venue?(venue)
@@ -243,18 +336,33 @@ class User < ActiveRecord::Base
       return nil if rlist.count == 0
       agent = User.find_by_id(rlist.first.user_id)
       return nil if agent == nil
+      puts "Adding an agent: #{agent.name}"
       managers << agent
       subordinate = agent
     end
-    rlist = Userrole.where("user_id=?", self.id)
-    return managers if rlist.empty?
-    rlist.each do |role|
-      if role.manager != nil
-        manager = User.find_by_id(role.manager_id)
-        managers << manager
-        managers.push(*manager.managers)
-      end
+
+    if managers.empty?
+      uroles = Userrole.where("user_id=?", self.id)
+    else
+      uroles = Userrole.where("user_id=?", managers.first.id)
     end
+    return managers if uroles.empty?
+    
+    while !uroles.first.manager.nil? do
+      next_manager = uroles.first.manager
+      #puts "The next manager is #{next_manager.name}"
+      managers << next_manager
+      uroles = Userrole.where("user_id=?", next_manager.id)
+    end
+
+    # rlist.each do |role|
+    #   puts "Finding a manager for #{role.user.name}"
+    #   if role.manager != nil
+    #     manager = User.find_by_id(role.manager_id)
+    #     managers << manager
+    #     managers.push(*manager.managers)
+    #   end
+    # end
     return managers
   end
 
@@ -384,14 +492,29 @@ class User < ActiveRecord::Base
   end
 
   def most_senior_role  
-    if self.is_a?(Player)
-      role = Role.find_by_name('Player')
-      puts "Error - player role not found" if role.nil?
-      return role
-    end
     if self.is_a?(Staff)
       role = Role.find_by_name('Staff')
       puts "Error - staff role not found" if role.nil?
+      return role
+    end
+    if self.is_country_distributor?
+      role = Role.find_by_name('Country Distributor')
+      puts "Error - country distributor role not found" if role.nil?
+      return role
+    end
+    if self.is_master_distributor?
+      role = Role.find_by_name('Master Distributor')
+      puts "Error - master distributor role not found" if role.nil?
+      return role
+    end
+    if self.is_regional_distributor?
+      role = Role.find_by_name('Regional Distributor')
+      puts "Error - regional distributor role not found" if role.nil?
+      return role
+    end
+    if self.is_agent?
+      role = Role.find_by_name('Agent')
+      puts "Error - agent role not found" if role.nil?
       return role
     end
     if self.is_employee?
@@ -399,15 +522,12 @@ class User < ActiveRecord::Base
       puts "Error - employee role not found" if role.nil?
       return role
     end
-    userroles = Userrole.where("user_id=?", self)
-    return nil unless userroles.count > 0
-    return userroles.first.role if userroles.count == 1
-    roles = []
-    userroles.each do |userrole|
-      roles << userrole.role
+    if self.is_a?(Player)
+      role = Role.find_by_name('Player')
+      puts "Error - player role not found" if role.nil?
+      return role
     end
-    highest_role = roles.max { |a,b| a.level <=> b.level}
-    return highest_role
+    nil
   end
 
   def immediate_subordinates
