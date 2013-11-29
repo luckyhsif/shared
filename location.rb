@@ -25,6 +25,14 @@ class Location < ActiveRecord::Base
     return Location.where("parent_id is NULL")
   end
 
+  def can_be_removed?
+    if self.is_a?(Venue) && !self.players.empty?
+        return false
+    end
+    rs = Responsibility.where("location_id=?", self)
+    return rs.empty?
+  end
+
   def subordinate_type
     return 'MasterRegion' if self.is_a?(Country)
     return 'Region' if self.as_a?(MasterRegion)
