@@ -35,8 +35,8 @@ class Location < ActiveRecord::Base
 
   def subordinate_type
     return 'MasterRegion' if self.is_a?(Country)
-    return 'Region' if self.as_a?(MasterRegion)
-    return 'Venue' if self.as_a?(Region)
+    return 'Region' if self.is_a?(MasterRegion)
+    return 'Venue' if self.is_a?(Region)
     nil
   end    
 
