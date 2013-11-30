@@ -28,4 +28,8 @@ class MasterRegion < Location
     return 't.location.region.add'
   end
 
+  def self.button_label
+    return 't.location.master.add'
+  end
+
 end

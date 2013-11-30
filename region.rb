@@ -28,4 +28,8 @@ class Region < Location
     return 't.location.venue.add'
   end
 
+  def self.button_label
+    return 't.location.region.add'
+  end
+
 end

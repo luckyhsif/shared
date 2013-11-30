@@ -129,6 +129,88 @@ class User < ActiveRecord::Base
     end
   end
 
+  def unmanaged_master_regions
+    # self is a country distributor
+    # first collect all the countries assigned to self
+    # then gather all master regions that are children of these countries
+    # return all the children that are not allocated to a person
+    master_regions = []
+    resps = Responsibility.where("user_id=?", self)
+    return master_regions if resps.empty?
+    countries = []
+    resps.each do |resp|
+      countries << resp.location if resp.location.is_a?(Country)
+    end
+    return master_regions if countries.empty?
+    sublocs = []
+    countries.each do |country|
+      sublocs.push(*country.children)
+    end
+    sublocs.each do |subloc|
+      resps = Responsibility.where("location_id=?", subloc)
+      master_regions << subloc if resps.empty?
+    end
+    return master_regions
+  end
+
+  def unmanaged_regions
+    # self is a master distributor
+    # first collect all the master regions assigned to self
+    # then gather all regions that are children of these master regions
+    # return all the children that are not allocated to a person
+    regions = []
+    resps = Responsibility.where("user_id=?", self)
+    return regions if resps.empty?
+    master_regions = []
+    resps.each do |resp|
+      master_regions << resp.location if resp.location.is_a?(MasterRegion)
+    end
+    return regions if master_regions.empty?
+    sublocs = []
+    master_regions.each do |mregion|
+      sublocs.push(*mregion.children)
+    end
+    sublocs.each do |subloc|
+      resps = Responsibility.where("location_id=?", subloc)
+      regions << subloc if resps.empty?
+    end
+    return regions
+  end
+
+  def unmanaged_venues
+    # self is a regional distributor
+    # first collect all the regions assigned to self
+    # then gather all venues that are children of these regions
+    # return all the children that are not allocated to a person
+    venues = []
+    resps = Responsibility.where("user_id=?", self)
+    return venues if resps.empty?
+    regions = []
+    resps.each do |resp|
+      regions << resp.location if resp.location.is_a?(Region)
+    end
+    return venues if regions.empty?
+    sublocs = []
+    regions.each do |reg|
+      sublocs.push(*reg.children)
+    end
+    sublocs.each do |subloc|
+      resps = Responsibility.where("location_id=?", subloc)
+      venues << subloc if resps.empty?
+    end
+    return venues
+  end
+
+  def self.unmanaged_countries
+    countries = []
+    Country.all.each do |country| 
+      resps = Responsibility.where("location_id=?", country)
+      countries << resps.first.location unless resps.empty?
+    end 
+    return countries if countries.empty?
+    countries.sort! { |a,b| a.name <=> b.name }
+  end
+
   def available_permissions
     return self.permissions
   end
@@ -451,8 +533,7 @@ class User < ActiveRecord::Base
     self.adjust_logons
   end
 
-  def allocated_locations
-    # returns the locations allocated directly to the current user
+  def allocated_locations_most_senior_role
     return [] if self.type == 'Staff'
     locations = []
     if self.type == 'Player'
@@ -468,6 +549,17 @@ class User < ActiveRecord::Base
     return locations
   end
   
+  def allocated_locations_all_roles
+    return [] if self.type == 'Staff'
+    locations = []
+    if self.type == 'Player'
+      locations << self.venue
+      return locations
+    end
+    responsibilities = Responsibility.where("user_id=?", self)
+    return responsibilities.map { |resp| resp.location }
+  end
+
   def distributor_locations
     locations = []
     distributor = self
@@ -481,7 +573,7 @@ class User < ActiveRecord::Base
   end
 
   def included_locations    # This is tested but is not used yet
-    immediate_locations = self.allocated_locations
+    immediate_locations = self.allocated_locations_most_senior_role
     all_locations = []
     all_locations.push(*immediate_locations)
     immediate_locations.each do |l|

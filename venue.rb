@@ -51,6 +51,10 @@ class Venue < Location
     return 't.location.venue.add'
   end
 
+  def self.button_label
+    return 't.location.venue.add'
+  end
+
   private
   
     def may_not_have_children

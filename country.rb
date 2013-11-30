@@ -37,8 +37,22 @@ class Country < Location
     return 't.location.country.manager_heading'
   end
 
+  def self.button_label
+    t.location.country.add
+  end
+
   def self.buttons_for_children_list
     return 't.location.master.add'
+  end
+
+  def self.unmanaged_countries
+    countries = []
+    Country.all.each do |country| 
+      resps = Responsibility.where("location_id=?", country)
+      countries << resps.first.location unless resps.empty?
+    end 
+    return countries if countries.empty?
+    countries.sort! { |a,b| a.name <=> b.name }
   end
 
   private
