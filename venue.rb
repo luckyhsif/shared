@@ -19,9 +19,10 @@ class Venue < Location
 
   def agent
     role = Role.find_by_name('Agent')
-    rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, self.id]
-    agent = User.find_by_id(rlist.first.user_id)
-    return agent
+    #rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, self.id]
+    rlist = Responsibility.where("role_id=? AND location_id=?", role.id, self)
+    return nil if rlist.empty?
+    User.find_by_id(rlist.first.user.id)
   end
 
   def has_employee?(employee) 

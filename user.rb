@@ -36,26 +36,22 @@ class User < ActiveRecord::Base
 
   def self.search(role_id, enquirer, search)
     user_ids = find_by_sql ["SELECT u.id FROM users u WHERE u.name LIKE ?", "%#{search}%"]
-    puts "The id collection is #{user_ids.to_json}"
     role = Role.find_by_id(role_id)
     idlist = []
     user = nil
     user_ids.each do |uid|
+      user = User.find_by_id(uid)
       case role.name
       when 'Player'
-        user = Player.find_by_id(uid)
         if user 
           managers = user.managers
           puts "The Player's managers are: #{managers.to_json}"
           idlist << uid if user && user.is_a?(Player) && (enquirer.is_a?(Staff) || managers.include?(enquirer))
         end
       when 'Employee'
-        user = User.find_by_id(uid)
         managers = user.managers
         idlist << uid if user && user.is_employee? && (enquirer.is_a?(Staff) || managers.include?(enquirer))
       when 'Agent'
-        puts "An Agent has been supplied"
-        user = User.find_by_id(uid)
         if user && user.is_agent?
           puts user.to_json
           if enquirer.is_a?(Staff) 
@@ -66,7 +62,6 @@ class User < ActiveRecord::Base
           end
         end
       when 'Regional Distributor'
-        user = User.find_by_id(uid)
         if user && user.is_regional_distributor?
           if enquirer.is_a?(Staff) 
             idlist << uid
@@ -76,7 +71,6 @@ class User < ActiveRecord::Base
           end
         end
       when 'Master Distributor'
-        user = User.find_by_id(uid)
         if user && user.is_master_distributor?
           if enquirer.is_a?(Staff) 
             idlist << uid
@@ -86,7 +80,6 @@ class User < ActiveRecord::Base
           end
         end
       when 'Country Distributor'
-        user = User.find_by_id(uid)
         if user && user.is_country_distributor?
           if enquirer.is_a?(Staff) 
             idlist << uid
@@ -96,11 +89,9 @@ class User < ActiveRecord::Base
           end
         end
       when 'Staff'
-        user = Staff.find_by_id(uid)
         idlist << uid if user && enquirer.is_a?(Staff)
       end
     end
-    # cds = User.find(rlist.map(&:user_id).uniq)
     users = idlist.map { |id| User.find_by_id(id) }
     users.sort! { |a,b| a.name <=> b.name }
   end
@@ -108,11 +99,6 @@ class User < ActiveRecord::Base
   def user_role_types_sorted
     urtypes = self.user_roles.map { |urole| urole.role }
     urtypes.sort! { |a,b| a.level <=> b.level }
-  end
-
-  def next_available_role_type
-    existing_roles = self.user_roles.map(&:role_id).uniq
-    #not yet completed
   end
 
   def issue_bonus(player, amount, currency = Account::DEFAULT_CURRENCY)
@@ -131,9 +117,9 @@ class User < ActiveRecord::Base
 
   def unmanaged_master_regions
     # self is a country distributor
-    # first collect all the countries assigned to self
-    # then gather all master regions that are children of these countries
-    # return all the children that are not allocated to a person
+    # First collect all the countries assigned to self,
+    # then gather all master regions that are children of these countries.
+    # Return all the master regions that are not allocated to a user
     master_regions = []
     resps = Responsibility.where("user_id=?", self)
     return master_regions if resps.empty?
@@ -155,9 +141,9 @@ class User < ActiveRecord::Base
 
   def unmanaged_regions
     # self is a master distributor
-    # first collect all the master regions assigned to self
-    # then gather all regions that are children of these master regions
-    # return all the children that are not allocated to a person
+    # First collect all the master regions assigned to self,
+    # then gather all regions that are children of these master regions.
+    # Return all the regions that are not allocated to a user.
     regions = []
     resps = Responsibility.where("user_id=?", self)
     return regions if resps.empty?
@@ -178,10 +164,10 @@ class User < ActiveRecord::Base
   end
 
   def unmanaged_venues
-    # self is a regional distributor
-    # first collect all the regions assigned to self
-    # then gather all venues that are children of these regions
-    # return all the children that are not allocated to a person
+    # self is a regional distributor.
+    # First collect all the regions assigned to self,
+    # then gather all venues that are children of these regions.
+    # Return all the children that are not allocated to a user.
     venues = []
     resps = Responsibility.where("user_id=?", self)
     return venues if resps.empty?
@@ -215,20 +201,11 @@ class User < ActiveRecord::Base
     return self.permissions
   end
 
-  def manager_for_role(role) 
-    responsibilities = Responsibility.find_by_sql ["SELECT manager_id FROM responsibilities r WHERE r.role_id = ? AND r.user_id = ?", role.id, self.id]
-    return nil if responsibilities.empty?
-    manager = User.find_by_id(responsibilities.first.manager_id)
-    return manager
-  end
-
   def agent_of_employee
     employee_role_type = Role.find_by_name('Employee')
     rlist = Userrole.where("user_id=? AND role_id=?", self.id, employee_role_type.id)
     return nil if rlist.empty?
     agent = rlist.first.manager
-    return nil if agent.nil?
-    return agent
   end
 
   def is_employee?
@@ -293,13 +270,10 @@ class User < ActiveRecord::Base
     employee_role_type = Role.find_by_name('Employee')
     agent_roles = Userrole.where("role_id=? AND manager_id=?", employee_role_type.id, self.id)
     return employees if agent_roles.empty?
-    agent_roles.each do |userrole|
-      employees << userrole.user
-    end
-    return employees
+    agent_roles.map { |uroles| uroles.user}
   end
 
-  def agent_players     #tested
+  def agent_players 
     agent_role_type = Role.find_by_name('Agent')
     rlist = Responsibility.where("user_id=? AND role_id=?", self, agent_role_type)
     players = []
@@ -323,17 +297,7 @@ class User < ActiveRecord::Base
     return players
   end
 
-  def agent_of_player    # tested
-    return nil unless self.type == 'Player'
-    venue = self.venue
-    agent_role_type = Role.find_by_name('Agent')
-    rlist = Responsibility.where("role_id=? AND location_id=?", agent_role_type.id, venue.id)
-    return nil if !rlist || rlist.count == 0
-    agent = User.find_by_id(rlist.first.user)
-    return agent
-  end
-
-  def manages_user?(user)   #tested
+  def manages_user?(user)
     subordinate = user
     manager = self
     return false if subordinate == manager
@@ -345,31 +309,23 @@ class User < ActiveRecord::Base
       subordinate_role_name = 'Player'
     else
       subordinate_role = subordinate.most_senior_role
-      return false if subordinate_role.nil?  # unexpected error
-      #puts "subordinate_role: #{subordinate_role.to_json}"
+      return false if subordinate_role.nil? 
       subordinate_role_name = subordinate_role.name
     end
-    # puts "manages_user?(user) - all roles"
-    # puts "Manager: #{manager.name}" 
-    # puts "manager role: #{manager_role.name}"
-    # puts "Subordinate: #{subordinate.name}" 
-    # puts "subordinate role_name: #{subordinate_role_name}"
     if manager_role.name == 'Employee' 
-      #puts "manages_user?(user) - manager(#{manager.name}) is an employee"
       return false unless subordinate.is_a?(Player)
       return subordinate.venue.has_employee?(manager)
     end
     if manager_role.name == 'Agent'
-      #puts "manages_user?(user) - manager(#{manager.name}) is an agent"
       return manager.agent_venues.include?(subordinate.venue) if subordinate_role_name == 'Player'
       return manager.agent_employees.include?(subordinate) if subordinate_role_name == 'Employee'
       return false
     end
     if subordinate_role_name == 'Player'
-      subordinate = subordinate.agent_of_player
+      subordinate = subordinate.agent
     elsif subordinate_role_name == 'Employee'
       subordinate = subordinate.agent_of_employee
-      return false if subordinate.nil?     # This will hapen if the test case does not include an employee role type
+      return false if subordinate.nil? 
     end
     managers = subordinate.managers
     return managers.include?(manager)
@@ -383,25 +339,21 @@ class User < ActiveRecord::Base
     responsibilities = Responsibility.where("user_id=?", self.id)
     # If the query does no results, self has no responsibility for any location
     return 'NONE' if responsibilities.empty?
-    #puts "#{self.name} has direct responsibilities for these locations:"
     locids = responsibilities.map { |r| r.location.id }
-    #puts locids.to_json
     # If a location has directly been assigned to self, it may only be viewed
     return 'VIEW' if locids.include?(child_location.id)
     child_loc_parent_ids = child_location.parent_location_ids
-    #puts "The parent ids of child id #{child_location.id} are #{child_loc_parent_ids.to_json}"
     locids.each do |locid|
       return 'ALL' if child_loc_parent_ids.include?(locid)
     end
     'NONE'
   end
 
-  # Find the immediate manager of self
+  # Find the manager of the user's most senior role
   def manager
-    return self.agent_of_player if self.is_a?(Player)
+    return self.agent if self.is_a?(Player)
     return nil if self.is_a?(Staff)
     own_most_senior_role_type = self.most_senior_role
-    puts "User - manager - own_most_senior_role_type: #{own_most_senior_role_type.to_json}"
     return nil if own_most_senior_role_type.nil?
     user_role = Userrole.where("user_id=? AND role_id=?", self.id, own_most_senior_role_type.id)
     return nil if user_role.nil?
@@ -411,16 +363,7 @@ class User < ActiveRecord::Base
   def managers 
     managers = []
     if self.type == 'Player'
-      subordinate = self
-      venue = subordinate.venue
-      agent_role_type = Role.find_by_name('Agent')
-      rlist = Responsibility.where("role_id=? AND location_id=?", agent_role_type.id, venue.id)
-      return nil if rlist.count == 0
-      agent = User.find_by_id(rlist.first.user_id)
-      return nil if agent == nil
-      puts "Adding an agent: #{agent.name}"
-      managers << agent
-      subordinate = agent
+      managers << self.agent
     end
 
     if managers.empty?
@@ -432,50 +375,11 @@ class User < ActiveRecord::Base
     
     while !uroles.first.manager.nil? do
       next_manager = uroles.first.manager
-      #puts "The next manager is #{next_manager.name}"
       managers << next_manager
       uroles = Userrole.where("user_id=?", next_manager.id)
     end
-
-    # rlist.each do |role|
-    #   puts "Finding a manager for #{role.user.name}"
-    #   if role.manager != nil
-    #     manager = User.find_by_id(role.manager_id)
-    #     managers << manager
-    #     managers.push(*manager.managers)
-    #   end
-    # end
     return managers
   end
-
-  # def manager_of?(user)
-  #   return false unless user_level(self) > user_level(user)
-  #   return true if self.is_a?(Staff)
-  #   user.managers.include?(self)
-  # end
-
-  # def manager(location)
-  #   # Returns the immediate manager of the current user
-  #   #puts "Entering User - manager, self: #{self.to_json}"
-  #   if self.type == 'Player'
-  #     #role = Role.find_by_name('Agent')   # The role is derived from the responsibility
-  #     responsibilities = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, location.id]
-  #     # The specified location can have only one Agent
-  #     # The agent is the manager of the current player
-  #     manager = User.find_by_id(responsibilities.first.user_id)
-  #   else  # It is a User
-  #     puts "\n User - manager(loc) - It is a User"
-  #     #responsibilities = Responsibility.find_by_sql ["SELECT id, role_id FROM responsibilities r WHERE r.user_id = ? AND r.location_id = ?", self.id, location.id]
-  #     responsibilities = Responsibility.where("user_id=? AND location_id=?", self.id, location.id)
-  #     # The current user will have one responsibility for these criteria
-  #     responsibility = Responsibility.find_by_id(responsibilities.first.id)
-  #     if !responsibility
-  #       return nil
-  #     end
-  #     manager = responsibility.manager
-  #   end
-  #   return manager
-  # end
 
  # include BCrypt
   def password
@@ -542,20 +446,19 @@ class User < ActiveRecord::Base
     end
     role = self.most_senior_role
     responsibilities = Responsibility.where("user_id=? AND role_id=?", self, role)
-    return nil unless responsibilities
-    responsibilities.each do |r|
-      locations << r.location
-    end
-    return locations
+    # return nil unless responsibilities
+    # responsibilities.each do |r|
+    #   locations << r.location
+    # end
+    # return locations
+    # users = User.find(urlist.map(&:user_id).uniq)
+    responsibilities.map { |resp| resp.location }
   end
   
   def allocated_locations_all_roles
     return [] if self.type == 'Staff'
     locations = []
-    if self.type == 'Player'
-      locations << self.venue
-      return locations
-    end
+    return [self.venue] if self.is_a?(Player)
     responsibilities = Responsibility.where("user_id=?", self)
     return responsibilities.map { |resp| resp.location }
   end
