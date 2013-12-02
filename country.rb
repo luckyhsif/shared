@@ -48,11 +48,12 @@ class Country < Location
   def self.unmanaged_countries
     countries = []
     Country.all.each do |country| 
-      resps = Responsibility.where("location_id=?", country)
-      countries << resps.first.location unless resps.empty?
+      resps = Responsibility.where("location_id=?", country.id)
+      countries << country if resps.empty?
     end 
     return countries if countries.empty?
     countries.sort! { |a,b| a.name <=> b.name }
+    return countries
   end
 
   private

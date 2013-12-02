@@ -446,21 +446,22 @@ class User < ActiveRecord::Base
     end
     role = self.most_senior_role
     responsibilities = Responsibility.where("user_id=? AND role_id=?", self, role)
-    # return nil unless responsibilities
-    # responsibilities.each do |r|
-    #   locations << r.location
-    # end
-    # return locations
-    # users = User.find(urlist.map(&:user_id).uniq)
     responsibilities.map { |resp| resp.location }
   end
   
   def allocated_locations_all_roles
     return [] if self.type == 'Staff'
-    locations = []
     return [self.venue] if self.is_a?(Player)
     responsibilities = Responsibility.where("user_id=?", self)
-    return responsibilities.map { |resp| resp.location }
+    locs = responsibilities.map { |resp| resp.location }
+    locs.sort! { |a,b| a.name <=> b.name }
+  end
+
+  def location_names_all_roles
+    locs = self.allocated_locations_all_roles
+    locations = locs.map { |loc| loc.name }
+    locations.sort! { |a,b| a <=> b }
+    return locations.join(", ")
   end
 
   def distributor_locations
@@ -474,18 +475,7 @@ class User < ActiveRecord::Base
     end
     return locations
   end
-
-  def included_locations    # This is tested but is not used yet
-    immediate_locations = self.allocated_locations_most_senior_role
-    all_locations = []
-    all_locations.push(*immediate_locations)
-    immediate_locations.each do |l|
-      dl = l.descendant_locations
-      all_locations.push(*dl)
-    end
-    return all_locations
-  end
-
+  
   def most_senior_role  
     if self.is_a?(Staff)
       role = Role.find_by_name('Staff')
@@ -539,6 +529,22 @@ class User < ActiveRecord::Base
   #     return 0
   #   end
   # end
+
+  def included_locations
+    # Returns all locations that the user is directly responsible for,
+    # including their child locations. A user is therefore allowed to 
+    # maintain any locations in this list.
+    return [] if self.type == 'Player'
+    return Location.all if self.type == 'Staff'
+    immediate_locations = self.allocated_locations_most_senior_role
+    all_locations = []
+    all_locations.push(*immediate_locations)
+    immediate_locations.each do |l|
+      dl = l.descendant_locations
+      all_locations.push(*dl)
+    end
+    return all_locations
+  end
 
   def manage_locations   #tested
     return nil if self.type == 'Player'
