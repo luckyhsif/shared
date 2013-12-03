@@ -45,7 +45,6 @@ class User < ActiveRecord::Base
       when 'Player'
         if user 
           managers = user.managers
-          puts "The Player's managers are: #{managers.to_json}"
           idlist << uid if user && user.is_a?(Player) && (enquirer.is_a?(Staff) || managers.include?(enquirer))
         end
       when 'Employee'
@@ -53,7 +52,6 @@ class User < ActiveRecord::Base
         idlist << uid if user && user.is_employee? && (enquirer.is_a?(Staff) || managers.include?(enquirer))
       when 'Agent'
         if user && user.is_agent?
-          puts user.to_json
           if enquirer.is_a?(Staff) 
             idlist << uid
           else
