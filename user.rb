@@ -250,8 +250,9 @@ class User < ActiveRecord::Base
     venues = []
     agent_role_type = Role.find_by_name('Agent')
     rlist = Responsibility.where("user_id=? AND role_id=?", self.id, agent_role_type.id)
-    venues = Venue.find(rlist.map(&:location_id).uniq) unless rlist.empty?
-    return venues
+    #venues = Venue.find(rlist.map(&:location_id).uniq) unless rlist.empty?
+    return venues if rlist.empty?
+    venues = rlist.map { |resp| resp.location }
   end
 
   def employee_venues
@@ -278,7 +279,8 @@ class User < ActiveRecord::Base
     return players if rlist.empty?
     rlist.each do |r|
       venue = r.location
-      players.push(*venue.players)
+      venue_players = Player.where("venue_id=?", venue.id)
+      players.push(*venue_players)
     end
     return players
   end

@@ -17,6 +17,10 @@ class Venue < Location
     return self.accounts.where(name: name.to_s, currency: currency.to_s).first_or_create
   end
 
+  # def players
+  #   return Player.where("venue_id=?", self.id)
+  # end
+
   def agent
     role = Role.find_by_name('Agent')
     #rlist = Responsibility.find_by_sql ["SELECT user_id FROM responsibilities r WHERE r.role_id = ? AND r.location_id = ?", role.id, self.id]
