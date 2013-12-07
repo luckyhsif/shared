@@ -21,24 +21,28 @@ class Userrole < ActiveRecord::Base
   def master_distributor_subordinates
     md_role_type = Role.find_by_name('Master Distributor')
     master_roles = Userrole.where("role_id = ? AND manager_id = ?", md_role_type.id, self.user.id)
+    master_roles.sort! { |a,b| a.user.name <=> b.user.name }
     return master_roles
   end
 
   def regional_distributor_subordinates
     rd_role_type = Role.find_by_name('Regional Distributor')
     regional_roles = Userrole.where("role_id = ? AND manager_id = ?", rd_role_type.id, self.user.id)
+    regional_roles.sort! { |a,b| a.user.name <=> b.user.name }
     return regional_roles
   end
 
   def agent_subordinates
     agent_role_type = Role.find_by_name('Agent')
     agent_roles = Userrole.where("role_id = ? AND manager_id = ?", agent_role_type.id, self.user.id)
+    agent_roles.sort! { |a,b| a.user.name <=> b.user.name }
     return agent_roles    
   end
 
   def employee_subordinates
     employee_role_type = Role.find_by_name('Employee')
     employee_roles = Userrole.where("role_id = ? AND manager_id = ?", employee_role_type.id, self.user.id)
+    employee_roles.sort! { |a,b| a.user.name <=> b.user.name }
     return employee_roles
   end
 

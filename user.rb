@@ -7,7 +7,6 @@ class User < ActiveRecord::Base
   has_many :messages, foreign_key: :sender_id
   has_many :userroles, foreign_key: :user_id
   has_many :roles, through: :userroles
-  # has_many :managers, through: :userroles, foreign_key: :manager_id
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
 
@@ -134,7 +133,8 @@ class User < ActiveRecord::Base
       resps = Responsibility.where("location_id=?", subloc)
       master_regions << subloc if resps.empty?
     end
-    return master_regions
+    return master_regions if master_regions.count < 2
+    master_regions.sort! { |a,b| a.name <=> b.name }
   end
 
   def unmanaged_regions
@@ -158,7 +158,8 @@ class User < ActiveRecord::Base
       resps = Responsibility.where("location_id=?", subloc)
       regions << subloc if resps.empty?
     end
-    return regions
+    return regions if regions.count < 2
+    regions.sort! { |a,b| a.name <=> b.name }
   end
 
   def unmanaged_venues
@@ -182,7 +183,8 @@ class User < ActiveRecord::Base
       resps = Responsibility.where("location_id=?", subloc)
       venues << subloc if resps.empty?
     end
-    return venues
+    return venues if venues.count < 2
+    venues.sort! { |a,b| a.name <=> b.name }
   end
 
   def self.unmanaged_countries
@@ -191,7 +193,7 @@ class User < ActiveRecord::Base
       resps = Responsibility.where("location_id=?", country)
       countries << resps.first.location unless resps.empty?
     end 
-    return countries if countries.empty?
+    return countries if countries.count < 2
     countries.sort! { |a,b| a.name <=> b.name }
   end
 
@@ -247,12 +249,13 @@ class User < ActiveRecord::Base
   end
   
   def agent_venues
-    venues = []
     agent_role_type = Role.find_by_name('Agent')
     rlist = Responsibility.where("user_id=? AND role_id=?", self.id, agent_role_type.id)
     #venues = Venue.find(rlist.map(&:location_id).uniq) unless rlist.empty?
     return venues if rlist.empty?
     venues = rlist.map { |resp| resp.location }
+    return venues if venues.count < 2
+    venues.sort! { |a,b| a.name <=> b.name }
   end
 
   def employee_venues
@@ -261,15 +264,18 @@ class User < ActiveRecord::Base
     role = Role.find_by_name('Employee')
     rlist = Responsibility.where("user_id=? AND role_id=?", self.id, role.id)
     venues = Venue.find(rlist.map(&:location_id).uniq)
+    return venues if venues.count < 2
+    venues.sort! { |a,b| a.name <=> b.name }
   end
 
   def agent_employees
     employees = []
-    agent_role_type = Role.find_by_name('Agent')
     employee_role_type = Role.find_by_name('Employee')
-    agent_roles = Userrole.where("role_id=? AND manager_id=?", employee_role_type.id, self.id)
-    return employees if agent_roles.empty?
-    agent_roles.map { |uroles| uroles.user}
+    employee_roles = Userrole.where("role_id=? AND manager_id=?", employee_role_type.id, self.id)
+    return employees if employee_roles.empty?
+    employees = employee_roles.map { |erole| erole.user}
+    return employees if employees.count < 2
+    employees.sort! { |a,b| a.name <=> b.name }
   end
 
   def agent_players 
