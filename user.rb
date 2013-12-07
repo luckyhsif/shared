@@ -452,7 +452,8 @@ class User < ActiveRecord::Base
     end
     role = self.most_senior_role
     responsibilities = Responsibility.where("user_id=? AND role_id=?", self, role)
-    responsibilities.map { |resp| resp.location }
+    locations = responsibilities.map { |resp| resp.location }
+    locations.sort! { |a,b| a.name <=> b.name }
   end
   
   def allocated_locations_all_roles
@@ -465,9 +466,9 @@ class User < ActiveRecord::Base
 
   def location_names_all_roles
     locs = self.allocated_locations_all_roles
-    locations = locs.map { |loc| loc.name }
-    locations.sort! { |a,b| a <=> b }
-    return locations.join(", ")
+    locations_names = locs.map { |loc| loc.name }
+    locations_names.sort! { |a,b| a <=> b }
+    return locations_names.join(", ")
   end
 
   def distributor_locations
@@ -479,7 +480,8 @@ class User < ActiveRecord::Base
       loc = Location.find_by_id(r.location_id)
       locations.push(*loc.descendant_locations)
     end
-    return locations
+    return locations if locations.count < 2
+    dlocs = locations.sort! { |a,b| a.name <=> b.name }
   end
   
   def most_senior_role  
@@ -525,6 +527,8 @@ class User < ActiveRecord::Base
     urlist = Userrole.where("manager_id = ?", self)
     return nil unless urlist && urlist.count > 0
     users = User.find(urlist.map(&:user_id).uniq)
+    return users if users.count < 2
+    users.sort! { |a,b| a.name <=> b.name }
   end
 
   # def user_level(user)   # A user no longer has a level. Users no have responsibiity levels

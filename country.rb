@@ -42,7 +42,7 @@ class Country < Location
   end
 
   def self.buttons_for_children_list
-    return 't.location.master.add'
+    return 't.location.masterregion.add'
   end
 
   def self.unmanaged_countries

@@ -21,29 +21,29 @@ class Userrole < ActiveRecord::Base
   def master_distributor_subordinates
     md_role_type = Role.find_by_name('Master Distributor')
     master_roles = Userrole.where("role_id = ? AND manager_id = ?", md_role_type.id, self.user.id)
+    return master_roles if master_roles.count < 2
     master_roles.sort! { |a,b| a.user.name <=> b.user.name }
-    return master_roles
   end
 
   def regional_distributor_subordinates
     rd_role_type = Role.find_by_name('Regional Distributor')
     regional_roles = Userrole.where("role_id = ? AND manager_id = ?", rd_role_type.id, self.user.id)
+    return regional_roles if regional_roles.count < 2
     regional_roles.sort! { |a,b| a.user.name <=> b.user.name }
-    return regional_roles
   end
 
   def agent_subordinates
     agent_role_type = Role.find_by_name('Agent')
     agent_roles = Userrole.where("role_id = ? AND manager_id = ?", agent_role_type.id, self.user.id)
-    agent_roles.sort! { |a,b| a.user.name <=> b.user.name }
-    return agent_roles    
+    return agent_roles if agent_roles.count < 2
+    agent_roles.sort! { |a,b| a.user.name <=> b.user.name }  
   end
 
   def employee_subordinates
     employee_role_type = Role.find_by_name('Employee')
     employee_roles = Userrole.where("role_id = ? AND manager_id = ?", employee_role_type.id, self.user.id)
+    return employee_roles if employee_roles.count < 2
     employee_roles.sort! { |a,b| a.user.name <=> b.user.name }
-    return employee_roles
   end
 
   def most_senior_subordinates

@@ -13,15 +13,15 @@ class MasterRegion < Location
   end
 
   def self.title_for_lists
-    return 't.location.master.plural'
+    return 't.location.masterregion.plural'
   end
 
   def self.title_for_location_names
-    return 't.location.master.location_heading'
+    return 't.location.masterregion.location_heading'
   end
 
   def self.title_for_managers
-    return 't.location.master.manager_heading'
+    return 't.location.masterregion.manager_heading'
   end
 
   def self.buttons_for_children_list
@@ -29,7 +29,7 @@ class MasterRegion < Location
   end
 
   def self.button_label
-    return 't.location.master.add'
+    return 't.location.masterregion.add'
   end
 
 end
