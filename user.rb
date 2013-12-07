@@ -8,6 +8,8 @@ class User < ActiveRecord::Base
   has_many :userroles, foreign_key: :user_id
   has_many :roles, through: :userroles
 
+  default_scope order('name ASC')
+
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
 
   validates :email, :presence   => true,

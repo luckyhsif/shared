@@ -24,18 +24,17 @@ class Country < Location
     return managers
   end
 
+  # def self.title_for_lists
+  #   return 't.location.country.plural'
+  # end
 
-  def self.title_for_lists
-    return 't.location.country.plural'
-  end
+  # def self.title_for_location_names
+  #   return 't.location.country.location_heading'
+  # end
 
-  def self.title_for_location_names
-    return 't.location.country.location_heading'
-  end
-
-  def self.title_for_managers
-    return 't.location.country.manager_heading'
-  end
+  # def self.title_for_managers
+  #   return 't.location.country.manager_heading'
+  # end
 
   def self.button_label
     t.location.country.add
