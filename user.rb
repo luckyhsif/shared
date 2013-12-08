@@ -280,6 +280,26 @@ class User < ActiveRecord::Base
     employees.sort! { |a,b| a.name <=> b.name }
   end
 
+  def agent_players2(limit=4, offset=0)
+    player_count = 0
+    if player_count % limit == 0
+      page_count = player_count / limit
+    elsif 
+      page_count = player_count / limit + 1
+    end
+    agent_role_type = Role.find_by_name('Agent')
+    sqlstr = "SELECT Player.* FROM responsibilities RE"  \
+      " LEFT OUTER JOIN roles ON RE.role_id = roles.id" \
+      " LEFT OUTER JOIN users Agent ON RE.user_id = Agent.id" \
+      " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
+      " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
+      " WHERE roles.id = #{agent_role_type.id}" \
+      " AND Agent.id = #{self.id}" \
+      " ORDER BY Player.name LIMIT #{limit} OFFSET #{offset}" 
+    puts "sqlstr: #{sqlstr}"
+    agents = User.find_by_sql [sqlstr]
+  end
+
   def agent_players 
     agent_role_type = Role.find_by_name('Agent')
     rlist = Responsibility.where("user_id=? AND role_id=?", self, agent_role_type)
