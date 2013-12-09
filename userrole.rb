@@ -18,6 +18,27 @@ class Userrole < ActiveRecord::Base
     ur.first
   end
 
+  def self.all_master_distributors
+    md_role_type = Role.find_by_name('Master Distributor')
+    master_roles = Userrole.where("role_id = ?", md_role_type.id)
+    return master_roles if master_roles.count < 2
+    master_roles.sort! { |a,b| a.user.name <=> b.user.name }
+  end
+
+  def self.all_regional_distributors
+    rd_role_type = Role.find_by_name('Regional Distributor')
+    rd_roles = Userrole.where("role_id = ?", rd_role_type.id)
+    return rd_roles if rd_roles.count < 2
+    rd_roles.sort! { |a,b| a.user.name <=> b.user.name }
+  end
+
+  def self.all_agents
+    agent_role_type = Role.find_by_name('Agent')
+    agent_roles = Userrole.where("role_id = ?", agent_role_type.id)
+    return agent_roles if agent_roles.count < 2
+    agent_roles.sort! { |a,b| a.user.name <=> b.user.name }
+  end
+
   def master_distributor_subordinates
     md_role_type = Role.find_by_name('Master Distributor')
     master_roles = Userrole.where("role_id = ? AND manager_id = ?", md_role_type.id, self.user.id)

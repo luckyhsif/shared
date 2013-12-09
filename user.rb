@@ -280,14 +280,19 @@ class User < ActiveRecord::Base
     employees.sort! { |a,b| a.name <=> b.name }
   end
 
-  def agent_players2(limit=4, offset=0)
+  def agent_players2(offset=0, limit=0)
     player_count = 0
-    if player_count % limit == 0
-      page_count = player_count / limit
-    elsif 
-      page_count = player_count / limit + 1
-    end
     agent_role_type = Role.find_by_name('Agent')
+    player_ids = "SELECT Player.id FROM responsibilities RE"  \
+      " LEFT OUTER JOIN roles ON RE.role_id = roles.id" \
+      " LEFT OUTER JOIN users Agent ON RE.user_id = Agent.id" \
+      " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
+      " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
+      " WHERE roles.id = #{agent_role_type.id}" \
+      " AND Agent.id = #{self.id}"
+    total = (User.find_by_sql [player_ids]).count
+    calculated_offset = offset * limit
+    #puts "The offset for the next query is #{calculated_offset.to_s}"
     sqlstr = "SELECT Player.* FROM responsibilities RE"  \
       " LEFT OUTER JOIN roles ON RE.role_id = roles.id" \
       " LEFT OUTER JOIN users Agent ON RE.user_id = Agent.id" \
@@ -295,9 +300,9 @@ class User < ActiveRecord::Base
       " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
       " WHERE roles.id = #{agent_role_type.id}" \
       " AND Agent.id = #{self.id}" \
-      " ORDER BY Player.name LIMIT #{limit} OFFSET #{offset}" 
-    puts "sqlstr: #{sqlstr}"
+      " ORDER BY Player.name LIMIT #{limit} OFFSET #{calculated_offset}" 
     agents = User.find_by_sql [sqlstr]
+    results = [agents, total]
   end
 
   def agent_players 

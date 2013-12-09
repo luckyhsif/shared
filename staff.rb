@@ -12,6 +12,7 @@ class Staff < User
   def self.country_distributor_roles
     cntr_role_type = Role.find_by_name('Country Distributor')
     rlist = Userrole.where("role_id = ?", cntr_role_type.id)
+    rlist.sort! { |a,b| a.user.name <=> b.user.name }
   end
 
 end
