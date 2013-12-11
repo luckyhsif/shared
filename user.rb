@@ -1,3 +1,4 @@
+require 'rfc-822'
 class User < ActiveRecord::Base
 
   has_many :permissions, foreign_key: :user_id
@@ -13,7 +14,7 @@ class User < ActiveRecord::Base
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
 
   validates :email, :presence   => true,
-                    :format     => { :with => email_regex },
+                    :format     => { :with => RFC822::EMAIL },
                     :uniqueness => { :case_sensitive => false }
   validates :name,  :presence   => true, 
                     :length     => { :maximum => 50 }
@@ -280,7 +281,7 @@ class User < ActiveRecord::Base
     employees.sort! { |a,b| a.name <=> b.name }
   end
 
-  def agent_players2(offset=0, limit=0)
+  def agent_players(offset=0, limit=0)
     player_count = 0
     agent_role_type = Role.find_by_name('Agent')
     player_ids = "SELECT Player.id FROM responsibilities RE"  \
@@ -304,7 +305,7 @@ class User < ActiveRecord::Base
     results = [agents, total]
   end
 
-  def agent_players 
+  def agent_players2
     agent_role_type = Role.find_by_name('Agent')
     rlist = Responsibility.where("user_id=? AND role_id=?", self, agent_role_type)
     players = []
