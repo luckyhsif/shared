@@ -292,7 +292,6 @@ class User < ActiveRecord::Base
       " AND Agent.id = #{self.id}"
     total = (User.find_by_sql [player_ids]).count
     calculated_offset = offset * limit
-    #puts "The offset for the next query is #{calculated_offset.to_s}"
     sqlstr = "SELECT Player.* FROM responsibilities RE"  \
       " LEFT OUTER JOIN roles ON RE.role_id = roles.id" \
       " LEFT OUTER JOIN users Agent ON RE.user_id = Agent.id" \
