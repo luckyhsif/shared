@@ -54,7 +54,7 @@ class Userrole < ActiveRecord::Base
   end
 
   def self.all_agents(offset=0, limit=0)
-    puts "\Entering self.all_agents"
+    #puts "\Entering self.all_agents"
     agent_role_type = Role.find_by_name('Agent')
     #agent_roles = Userrole.where("role_id = ?", agent_role_type.id)
     agent_roles_ids = "SELECT U.id FROM userroles UR" \
@@ -73,7 +73,7 @@ class Userrole < ActiveRecord::Base
   end
 
   def master_distributor_subordinates(offset=0, limit=0)
-    puts "\nEntering master_distributor_subordinates"
+    #puts "\nEntering master_distributor_subordinates"
     md_role_type = Role.find_by_name('Master Distributor')
     #    master_roles = Userrole.where("role_id = ? AND manager_id = ?", md_role_type.id, self.user.id)
     master_roles_ids = "SELECT U.id FROM userroles UR" \
@@ -96,7 +96,7 @@ class Userrole < ActiveRecord::Base
   end
 
   def regional_distributor_subordinates(offset=0, limit=0)
-    puts "\nEntering regional_distributor_subordinates"
+    #puts "\nEntering regional_distributor_subordinates"
     rd_role_type = Role.find_by_name('Regional Distributor')
     #regional_roles = Userrole.where("role_id = ? AND manager_id = ?", rd_role_type.id, self.user.id)
     rd_roles_ids = "SELECT U.id FROM userroles UR" \
@@ -120,7 +120,7 @@ class Userrole < ActiveRecord::Base
   end
 
   def agent_subordinates(offset=0, limit=0)
-    puts "\nEntering agent_subordinates"
+    #puts "\nEntering agent_subordinates"
     agent_role_type = Role.find_by_name('Agent')
     #agent_roles = Userrole.where("role_id = ? AND manager_id = ?", agent_role_type.id, self.user.id)
     agent_roles_ids = "SELECT U.id FROM userroles UR" \
