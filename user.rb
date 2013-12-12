@@ -301,11 +301,35 @@ class User < ActiveRecord::Base
       " WHERE roles.id = #{agent_role_type.id}" \
       " AND Agent.id = #{self.id}" \
       " ORDER BY Player.name LIMIT #{limit} OFFSET #{calculated_offset}" 
-    agents = User.find_by_sql [sqlstr]
-    results = [agents, total]
+    players = User.find_by_sql [sqlstr]
+    results = [players, total]
   end
 
-  def agent_players2
+  def employee_players(offset=0, limit=0)
+    player_count = 0
+    employee_role_type = Role.find_by_name('Employee')
+    player_ids = "SELECT Player.id FROM responsibilities RE"  \
+      " LEFT OUTER JOIN roles ON RE.role_id = roles.id" \
+      " LEFT OUTER JOIN users Employee ON RE.user_id = Employee.id" \
+      " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
+      " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
+      " WHERE roles.id = #{employee_role_type.id}" \
+      " AND Employee.id = #{self.id}"
+    total = (User.find_by_sql [player_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT Player.* FROM responsibilities RE"  \
+      " LEFT OUTER JOIN roles ON RE.role_id = roles.id" \
+      " LEFT OUTER JOIN users Employee ON RE.user_id = Employee.id" \
+      " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
+      " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
+      " WHERE roles.id = #{employee_role_type.id}" \
+      " AND Employee.id = #{self.id}" \
+      " ORDER BY Player.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    players = User.find_by_sql [sqlstr]
+    results = [players, total]
+  end
+
+  def agent_players2  # Delete when no longer needed
     agent_role_type = Role.find_by_name('Agent')
     rlist = Responsibility.where("user_id=? AND role_id=?", self, agent_role_type)
     players = []
@@ -314,18 +338,6 @@ class User < ActiveRecord::Base
       venue = r.location
       venue_players = Player.where("venue_id=?", venue.id)
       players.push(*venue_players)
-    end
-    return players
-  end
-
-  def employee_players 
-    employee_role_type = Role.find_by_name('Employee')
-    players = []
-    return players unless self.is_employee?
-    venues = self.employee_venues
-    return players if venues.empty?
-    venues.each do |venue|
-      players.push(*venue.players)
     end
     return players
   end

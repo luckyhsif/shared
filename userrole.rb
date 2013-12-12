@@ -14,84 +14,182 @@ class Userrole < ActiveRecord::Base
   def self.find(user, role)
     ur = Userrole.where("user_id=? AND role_id=?", user.id, role.id)
     return nil if ur.empty?
-    #puts "Userrole find: #{ur.to_json}"
     ur.first
   end
 
-  def self.all_master_distributors
+  def self.all_master_distributors(offset=0, limit=0)
     md_role_type = Role.find_by_name('Master Distributor')
-    master_roles = Userrole.where("role_id = ?", md_role_type.id)
-    return master_roles if master_roles.count < 2
-    master_roles.sort! { |a,b| a.user.name <=> b.user.name }
+    #master_roles = Userrole.where("role_id = ?", md_role_type.id)
+    master_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " WHERE roles.id = #{md_role_type.id}"
+    total = (Userrole.find_by_sql [master_roles_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " WHERE roles.id = #{md_role_type.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    master_roles = Userrole.find_by_sql [sqlstr]
+    results = [master_roles, total]
   end
 
-  def self.all_regional_distributors
+  def self.all_regional_distributors(offset=0, limit=0)
     rd_role_type = Role.find_by_name('Regional Distributor')
-    rd_roles = Userrole.where("role_id = ?", rd_role_type.id)
-    return rd_roles if rd_roles.count < 2
-    rd_roles.sort! { |a,b| a.user.name <=> b.user.name }
+    #rd_roles = Userrole.where("role_id = ?", rd_role_type.id)
+    rd_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " WHERE roles.id = #{rd_role_type.id}"
+    total = (Userrole.find_by_sql [rd_roles_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " WHERE roles.id = #{rd_role_type.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    rd_roles = Userrole.find_by_sql [sqlstr]
+    results = [rd_roles, total]
   end
 
-  def self.all_agents
+  def self.all_agents(offset=0, limit=0)
+    puts "\Entering self.all_agents"
     agent_role_type = Role.find_by_name('Agent')
-    agent_roles = Userrole.where("role_id = ?", agent_role_type.id)
-    return agent_roles if agent_roles.count < 2
-    agent_roles.sort! { |a,b| a.user.name <=> b.user.name }
+    #agent_roles = Userrole.where("role_id = ?", agent_role_type.id)
+    agent_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " WHERE roles.id = #{agent_role_type.id}"
+    total = (Userrole.find_by_sql [agent_roles_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " WHERE roles.id = #{agent_role_type.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    agent_roles = Userrole.find_by_sql [sqlstr]
+    results = [agent_roles, total]
   end
 
-  def master_distributor_subordinates
+  def master_distributor_subordinates(offset=0, limit=0)
+    puts "\nEntering master_distributor_subordinates"
     md_role_type = Role.find_by_name('Master Distributor')
-    master_roles = Userrole.where("role_id = ? AND manager_id = ?", md_role_type.id, self.user.id)
-    return master_roles if master_roles.count < 2
-    master_roles.sort! { |a,b| a.user.name <=> b.user.name }
+    #    master_roles = Userrole.where("role_id = ? AND manager_id = ?", md_role_type.id, self.user.id)
+    master_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{md_role_type.id}" \
+      " AND UR.manager_id = #{self.user.id}"
+    total = (Userrole.find_by_sql [master_roles_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{md_role_type.id}" \
+      " AND Manager.id = #{self.user.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    master_roles = Userrole.find_by_sql [sqlstr]
+    results = [master_roles, total]
   end
 
-  def regional_distributor_subordinates
+  def regional_distributor_subordinates(offset=0, limit=0)
+    puts "\nEntering regional_distributor_subordinates"
     rd_role_type = Role.find_by_name('Regional Distributor')
-    regional_roles = Userrole.where("role_id = ? AND manager_id = ?", rd_role_type.id, self.user.id)
-    return regional_roles if regional_roles.count < 2
-    regional_roles.sort! { |a,b| a.user.name <=> b.user.name }
+    #regional_roles = Userrole.where("role_id = ? AND manager_id = ?", rd_role_type.id, self.user.id)
+    rd_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{rd_role_type.id}" \
+      " AND UR.manager_id = #{self.user.id}"
+    total = (Userrole.find_by_sql [rd_roles_ids]).count
+    #puts "regional_distributor_subordinates - total recs found: #{total.to_s}"
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{rd_role_type.id}" \
+      " AND Manager.id = #{self.user.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    rd_roles = Userrole.find_by_sql [sqlstr]
+    results = [rd_roles, total]
   end
 
-  def agent_subordinates
+  def agent_subordinates(offset=0, limit=0)
+    puts "\nEntering agent_subordinates"
     agent_role_type = Role.find_by_name('Agent')
-    agent_roles = Userrole.where("role_id = ? AND manager_id = ?", agent_role_type.id, self.user.id)
-    return agent_roles if agent_roles.count < 2
-    agent_roles.sort! { |a,b| a.user.name <=> b.user.name }  
+    #agent_roles = Userrole.where("role_id = ? AND manager_id = ?", agent_role_type.id, self.user.id)
+    agent_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{agent_role_type.id}" \
+      " AND UR.manager_id = #{self.user.id}"
+    total = (Userrole.find_by_sql [agent_roles_ids]).count
+    #puts "agent_subordinates - total recs found: #{total.to_s}"
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{agent_role_type.id}" \
+      " AND Manager.id = #{self.user.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    agent_roles = Userrole.find_by_sql [sqlstr]
+    results = [agent_roles, total]
   end
 
-  def employee_subordinates
+  def employee_subordinates(offset=0, limit=0)
     employee_role_type = Role.find_by_name('Employee')
-    employee_roles = Userrole.where("role_id = ? AND manager_id = ?", employee_role_type.id, self.user.id)
-    return employee_roles if employee_roles.count < 2
-    employee_roles.sort! { |a,b| a.user.name <=> b.user.name }
+    #employee_roles = Userrole.where("role_id = ? AND manager_id = ?", employee_role_type.id, self.user.id)
+    employee_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{employee_role_type.id}" \
+      " AND UR.manager_id = #{self.user.id}"
+    total = (Userrole.find_by_sql [employee_roles_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{employee_role_type.id}" \
+      " AND Manager.id = #{self.user.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    employee_roles = Userrole.find_by_sql [sqlstr]
+    results = [employee_roles, total]
   end
 
-  def most_senior_subordinates
+  def most_senior_subordinates(offset=0, limit=0)
     senior_role_type = self.role
     senior_user_role = self
     empty_list = []
     case senior_role_type.name
       when 'Country Distributor'
-        subordinates = self.master_distributor_subordinates
+        subordinates = self.master_distributor_subordinates(offset, limit)
         return subordinates unless subordinates.empty?
-        subordinates = self.regional_distributor_subordinates
+        subordinates = self.regional_distributor_subordinates(offset, limit)
         return subordinates unless subordinates.empty?
-        subordinates = self.agent_subordinates
+        subordinates = self.agent_subordinates(offset, limit)
         return subordinates
       when 'Master Distributor'
-        subordinates = self.regional_distributor_subordinates
+        subordinates = self.regional_distributor_subordinates(offset, limit)
         return subordinates unless subordinates.empty?
-        subordinates = self.agent_subordinates
+        subordinates = self.agent_subordinates(offset, limit)
         return subordinates
       when 'Regional Distributor'
-        subordinates = senior_user_role.agent_subordinates
+        subordinates = senior_user_role.agent_subordinates(offset, limit)
         return subordinates
       when 'Agent'
-        subordinates = senior_user_role.employee_subordinates
+        subordinates = senior_user_role.employee_subordinates(offset, limit)
         return subordinates
       when 'Employee'
-        subordinates = senior_user_role.user.employee_players
+        subordinates = senior_user_role.user.employee_players(offset, limit)
         return subordinates
       else
         return empty_list
