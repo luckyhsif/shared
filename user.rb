@@ -271,14 +271,26 @@ class User < ActiveRecord::Base
     venues.sort! { |a,b| a.name <=> b.name }
   end
 
-  def agent_employees
-    employees = []
+  def agent_employees(offset=0, limit=0)
     employee_role_type = Role.find_by_name('Employee')
-    employee_roles = Userrole.where("role_id=? AND manager_id=?", employee_role_type.id, self.id)
-    return employees if employee_roles.empty?
-    employees = employee_roles.map { |erole| erole.user}
-    return employees if employees.count < 2
-    employees.sort! { |a,b| a.name <=> b.name }
+    #employee_roles = Userrole.where("role_id=? AND manager_id=?", employee_role_type.id, self.id)
+    employee_role_ids = "SELECT Employee.id FROM userroles UR" \
+      " LEFT OUTER JOIN users Employee ON UR.user_id = Employee.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{employee_role_type.id}" \
+      " AND UR.manager_id = #{self.id}"
+    total = (User.find_by_sql [employee_role_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT Employee.* FROM users Employee"  \
+      " LEFT OUTER JOIN userroles UR ON UR.user_id = Employee.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{employee_role_type.id}" \
+      " AND UR.manager_id = #{self.id}" \
+      " ORDER BY Employee.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    employees = User.find_by_sql [sqlstr]
+    results = [employees, total]
   end
 
   def agent_players(offset=0, limit=0)
@@ -362,9 +374,15 @@ class User < ActiveRecord::Base
       return subordinate.venue.has_employee?(manager)
     end
     if manager_role.name == 'Agent'
-      return manager.agent_venues.include?(subordinate.venue) if subordinate_role_name == 'Player'
-      return manager.agent_employees.include?(subordinate) if subordinate_role_name == 'Employee'
-      return false
+      if subordinate_role_name == 'Player'
+        venues = manager.agent_venues
+        return manager.agent_venues.include?(subordinate.venue) 
+      elsif subordinate_role_name == 'Employee'
+        venues, total = manager.agent_employees(0,1000)
+        return venues.include?(subordinate)
+      else
+        return false
+      end
     end
     if subordinate_role_name == 'Player'
       subordinate = subordinate.agent
