@@ -2,7 +2,9 @@ class Location < ActiveRecord::Base
   include ActiveModel::Dirty
 
   validates :name, :presence   => true,
-                   :uniqueness => { :case_sensitive => false }
+                   :uniqueness => { :scope => :parent_id,  
+                                    :case_sensitive => false }
+        # :if => lambda { |loc| loc.parent_id != nil },
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
   has_many :children, class_name: 'Location', foreign_key: :parent_id
   has_many :responsibilities
@@ -16,6 +18,11 @@ class Location < ActiveRecord::Base
             :parent_may_not_be_venue
   before_save :may_not_be_a_parent_in_child_hierarchy
 
+class Screen < ActiveRecord::Base
+  belongs_to :user
+  validates :screen_size, :numericality => {:less_than_or_equal_to =>100, :greater_than_or_equal_to => 0}, :if => lambda {|s| s.user.access == 1 }
+end
+
   def root
     # return the root location, ie the parent at the top (bottom?) of the Location heirarchy
     return self if self.parent == nil
@@ -28,8 +35,10 @@ class Location < ActiveRecord::Base
   end
 
   def can_be_removed?
-    if self.is_a?(Venue) && !self.players.empty?
-        return false
+
+    if self.is_a?(Venue) 
+      players, total = self.players
+      return total == 0 ? true : false
     end
     rs = Responsibility.where("location_id=?", self)
     return rs.empty?
@@ -62,6 +71,19 @@ class Location < ActiveRecord::Base
   #   end
   #   return agent_locations
   # end
+
+  def immediate_children(offset=0, limit=0)
+    loc_ids = "SELECT Child.id FROM locations Child" \
+      " WHERE Child.parent_id = #{self.id}"
+    total = (Location.find_by_sql [loc_ids]).count
+    parent_loc = Location.find_by_id(self.id)
+    calculated_offset = offset * limit
+    sqlstr = "SELECT Child.* FROM locations Child" \
+      " WHERE Child.parent_id = #{self.id}"
+      " ORDER BY Child.name LIMIT #{limit} OFFSET #{calculated_offset}"
+    locations = Location.find_by_sql [sqlstr]
+    results = [locations, total]
+  end
 
   def parent_location_ids
     return nil unless self.parent

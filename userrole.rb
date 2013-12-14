@@ -196,10 +196,23 @@ class Userrole < ActiveRecord::Base
     end
   end
 
-  def locations
-    responsibilities = Responsibility.where("user_id=? AND role_id=?", self.user.id, self.role.id)
-    return [] if responsibilities.empty?
-    locations = responsibilities.map{ |resp| resp.location}
+  def locations(offset=0, limit=0)
+    #responsibilities = Responsibility.where("user_id=? AND role_id=?", self.user.id, self.role.id)
+    loc_ids = "SELECT L.id FROM responsibilities RE" \
+      " LEFT OUTER JOIN users U ON RE.user_id = U.id" \
+      " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
+      " WHERE RE.role_id = #{self.role.id}"
+      " AND RE.user_id = #{self.user.id}"
+    total = (User.find_by_sql [loc_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT L.* FROM responsibilities RE" \
+      " LEFT OUTER JOIN users U ON RE.user_id = U.id" \
+      " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
+      " WHERE RE.role_id = #{self.role.id}"
+      " AND RE.user_id = #{self.user.id}"
+      " ORDER BY L.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    locations = Userrole.find_by_sql [sqlstr]
+    results = [locations, total]
   end
 
   def managers_per_location

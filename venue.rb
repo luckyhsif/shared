@@ -17,9 +17,21 @@ class Venue < Location
     return self.accounts.where(name: name.to_s, currency: currency.to_s).first_or_create
   end
 
-  # def players
-  #   return Player.where("venue_id=?", self.id)
-  # end
+  def players(offset=0, limit=0)
+    player_ids = "SELECT U.id FROM users U" \
+      " LEFT OUTER JOIN locations L ON U.venue_id = L.id" \
+      " WHERE L.id = #{self.id}" \
+      " AND U.type = 'Player'"
+    total = (Player.find_by_sql [player_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT P.* FROM users P"  \
+      " LEFT OUTER JOIN locations L ON P.venue_id = L.id" \
+      " WHERE L.id = #{self.id}" \
+      " AND P.type = 'Player'" \
+      " ORDER BY P.name LIMIT #{limit} OFFSET #{calculated_offset}"
+    players = Player.find_by_sql [sqlstr]
+    results = [players, total]
+  end
 
   def agent
     role = Role.find_by_name('Agent')

@@ -4,6 +4,16 @@ class Country < Location
 
   validate :may_not_have_a_parent
 
+  def self.list(offset=0, limit=0)
+    total_countries = Country.all.count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT * FROM locations L"  \
+      " WHERE L.type = 'Country'" \
+      " ORDER BY L.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    countries = Location.find_by_sql [sqlstr]
+    results = [countries, total_countries]
+  end
+
   def self.country_managers
     managers = Hash.new
     cd_role_type = Role.find_by_name('Country Distributor')
@@ -14,6 +24,14 @@ class Country < Location
     return managers
   end
 
+  def self.button_label
+    t.location.country.add
+  end
+
+  def self.buttons_for_children_list
+    return 't.location.masterregion.add'
+  end
+
   def managers_for_sublocations  # print this
     managers = Hash.new
     md_role_type = Role.find_by_name('Master Distributor')
@@ -22,26 +40,6 @@ class Country < Location
       managers[resps.first.location.id] = resps.first.user unless resps.empty?
     end
     return managers
-  end
-
-  # def self.title_for_lists
-  #   return 't.location.country.plural'
-  # end
-
-  # def self.title_for_location_names
-  #   return 't.location.country.location_heading'
-  # end
-
-  # def self.title_for_managers
-  #   return 't.location.country.manager_heading'
-  # end
-
-  def self.button_label
-    t.location.country.add
-  end
-
-  def self.buttons_for_children_list
-    return 't.location.masterregion.add'
   end
 
   def self.unmanaged_countries
