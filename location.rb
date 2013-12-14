@@ -3,7 +3,8 @@ class Location < ActiveRecord::Base
 
   validates :name, :presence   => true,
                    :uniqueness => { :scope => :parent_id,  
-                                    :case_sensitive => false }
+                                    :case_sensitive => false },
+                   :length => { :in => 2..50}
         # :if => lambda { |loc| loc.parent_id != nil },
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
   has_many :children, class_name: 'Location', foreign_key: :parent_id
@@ -32,6 +33,12 @@ end
   def self.roots
     # return a list of all the Locations with no parents.
     return Location.where("parent_id is NULL")
+  end
+
+  def self.exists_within_parent?(child_loc_name, parent_loc)
+    testloc = self.find_by_name(child_loc_name)
+    return false if testloc.nil?
+    testloc.parent === parent_loc ? true : false
   end
 
   def can_be_removed?
