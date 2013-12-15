@@ -5,7 +5,6 @@ class Location < ActiveRecord::Base
                    :uniqueness => { :scope => :parent_id,  
                                     :case_sensitive => false },
                    :length => { :in => 2..50}
-        # :if => lambda { |loc| loc.parent_id != nil },
   belongs_to :parent, class_name: 'Location', foreign_key: :parent_id
   has_many :children, class_name: 'Location', foreign_key: :parent_id
   has_many :responsibilities

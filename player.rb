@@ -5,6 +5,16 @@ class Player < User
   validates_presence_of :venue
   has_many :accounts, foreign_key: :owner_id, dependent: :destroy
 
+  def self.list(offset=0, limit=0)
+    total = self.all.count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT P.* FROM users P" \
+      " WHERE P.type = 'Player'" \
+      " ORDER BY P.name LIMIT #{limit} OFFSET #{calculated_offset}"
+    players = User.find_by_sql [sqlstr]
+    results = [players, total]
+  end
+ 
   def agent
     return self.venue.agent
   end
