@@ -72,6 +72,27 @@ class Userrole < ActiveRecord::Base
     results = [agent_roles, total]
   end
 
+  def self.all_employees(offset=0, limit=0)
+    employee_role_type = Role.find_by_name('Employee')
+    #agent_roles = Userrole.where("role_id = ?", agent_role_type.id)
+    employee_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " WHERE roles.id = #{employee_role_type.id}"
+    total = (Userrole.find_by_sql [employee_roles_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " WHERE roles.id = #{employee_role_type.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    employee_roles = Userrole.find_by_sql [sqlstr]
+    puts "\nself.all_employees"
+    puts "Total employees: #{total}"
+    employee_roles.map { |erole| puts erole.user.name }
+    results = [employee_roles, total]
+  end
+
   def master_distributor_subordinates(offset=0, limit=0)
     #puts "\nEntering master_distributor_subordinates"
     md_role_type = Role.find_by_name('Master Distributor')

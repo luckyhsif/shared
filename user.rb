@@ -517,7 +517,7 @@ class User < ActiveRecord::Base
     return [] if self.type == 'Staff'
     return [self.venue] if self.is_a?(Player)
     responsibilities = Responsibility.where("user_id=?", self)
-    locs = responsibilities.map { |resp| resp.location }
+    locs = responsibilities.map { |resp| resp.location if resp.location }
     locs.sort! { |a,b| a.name <=> b.name }
   end
 
