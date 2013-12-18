@@ -5,10 +5,14 @@ class Account < ActiveRecord::Base
 
   belongs_to :owner, class_name: 'Player'
   belongs_to :venue
+  belongs_to :currency
   validates_presence_of :name
   validates_uniqueness_of :name, scope: [:owner_id, :currency], if: :has_owner?
   validates_uniqueness_of :name, scope: [:venue_id, :currency], if: :has_venue?
+  validates_presence_of :currency
   has_many :ledger_entries, dependent: :destroy
+  
+  validate :currency, :must_match_entries
   
   def balance
     credit = self.ledger_entries.sum(:credit)
@@ -27,4 +31,13 @@ class Account < ActiveRecord::Base
   def has_venue?
     return !self.venue.nil?
   end
+  private
+  
+  def must_match_entries
+    if cm = !self.currency.nil? && (self.ledger_entries.where("currency_id IS NOT ?", self.currency.id).count > 0)
+      errors.add(:currency,
+        "There #{cm == 1 ? 'is' : 'are'} #{cm} ledger entr#{cm == 1 ? 'y' : 'ies'} out of #{self.ledger_entries.count} total")
+    end
+  end
+
 end
