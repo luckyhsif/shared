@@ -226,14 +226,14 @@ class Userrole < ActiveRecord::Base
       " AND RE.user_id = #{self.user.id}"
     total = (User.find_by_sql [loc_ids]).count
     calculated_offset = offset * limit
-    sqlstr = "SELECT L.* FROM responsibilities RE" \
-      " LEFT OUTER JOIN users U ON RE.user_id = U.id" \
-      " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
+    sqlstr = "SELECT locations.* FROM locations" \
+      " LEFT OUTER JOIN responsibilities RE on locations.id = RE.location_id" \
+      " LEFT OUTER JOIN users U ON U.id = RE.user_id" \
       " WHERE RE.role_id = #{self.role.id}" \
-      " AND RE.user_id = #{self.user.id}" \
-      " ORDER BY L.name LIMIT #{limit} OFFSET #{calculated_offset}" 
-    locations = Userrole.find_by_sql [sqlstr]
-    results = [locations, total]
+      " AND U.id = #{self.user.id}" \
+      " ORDER BY locations.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    locs = Location.find_by_sql [sqlstr]
+    results = [locs, total]
   end
 
   def managers_per_location
