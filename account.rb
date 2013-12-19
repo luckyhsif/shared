@@ -24,6 +24,10 @@ class Account < ActiveRecord::Base
     return self.ledger_entries.empty?
   end
   
+  def self.casino(name = :wallet, currency = Currency.default)
+    return Account.where("owner_id IS NULL").where(name: name.to_s, currency: currency).first_or_create(name: name.to_s, currency: currency, owner: nil)
+  end
+
   def has_owner?
     return !self.owner.nil?
   end
