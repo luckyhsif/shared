@@ -27,7 +27,6 @@ class Currency < ActiveRecord::Base
   validates_presence_of :name
   validates_presence_of :symbol, allow_blank: true, default: ''
   validates_presence_of :iso_code
-  validates_presence_of :fractional_unit
   has_many :ledger_entries
   has_many :countries
   has_many :accounts

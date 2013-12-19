@@ -17,6 +17,7 @@ class User < ActiveRecord::Base
   has_many :deposits
   has_many :withdrawals
   has_many :accepted_bonuses, class_name: 'AcceptedBonus'
+  has_one :currency
 
   default_scope order('name ASC')
 

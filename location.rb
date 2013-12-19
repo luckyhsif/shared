@@ -10,6 +10,7 @@ class Location < ActiveRecord::Base
   has_many :responsibilities
   has_many :users, through: :responsibilities
   has_many :roles, through: :responsibilities
+  has_many :dial_prefixes
   #has_and_belongs_to_many :users
 
   default_scope order('name ASC')

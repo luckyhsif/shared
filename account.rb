@@ -38,10 +38,16 @@ class Account < ActiveRecord::Base
   private
   
   def must_match_entries
-    if cm = !self.currency.nil? && (self.ledger_entries.where("currency_id IS NOT ?", self.currency.id).count > 0)
-      errors.add(:currency,
-        "There #{cm == 1 ? 'is' : 'are'} #{cm} ledger entr#{cm == 1 ? 'y' : 'ies'} out of #{self.ledger_entries.count} total")
-    end
+    # if cm = !self.currency.nil?
+    #   puts "cm = !self.currency.nil?"
+    # end
+    # if self.ledger_entries.where("currency_id IS NOT ?", self.currency.id).count > 0
+    #   puts "self.ledger_entries.where('currency_id IS NOT ?', self.currency.id).count > 0)"
+    # end
+    # if cm = !self.currency.nil? && (self.ledger_entries.where("currency_id IS NOT ?", self.currency.id).count > 0)
+    #   errors.add(:currency,
+    #     "There #{cm == 1 ? 'is' : 'are'} #{cm} ledger entr#{cm == 1 ? 'y' : 'ies'} out of #{self.ledger_entries.count} total")
+    # end
   end
 
 end
