@@ -16,7 +16,7 @@ class Location < ActiveRecord::Base
 
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, 
             :parent_may_not_be_venue
-  before_save :may_not_be_a_parent_in_child_hierarchy
+  before_create :may_not_be_a_parent_in_child_hierarchy
 
 class Screen < ActiveRecord::Base
   belongs_to :user
@@ -150,32 +150,34 @@ end
 
   private
 
-  def may_not_be_a_parent_in_child_hierarchy
-    # get the immediate children of the last created object
-    # for each child, see if that child is a parent as well
-    # testloc = Location.last
-    # children = testloc.children if testloc.children
-    # return if children.nil? || testloc.parent.nil?
-    # parents = testloc.all_parents
-    # children.each do |child|
-    #   if parents.include?(child)
-    #     puts "\n may_not_be_a_parent_in_child_hierarchy"
-    #     errors.add(:parent, "Child location may not be a parent at the same time")
-    #   end
-    # end
-  end
-
-  def parent_may_not_be_a_circular_reference
-    if (self.parent == self) || (!(self.parent == nil) && (self.parent.parent == self))
-      errors.add(:parent, "Can't be self")
+    def may_not_be_a_parent_in_child_hierarchy
+      # get the immediate children of the last created object
+      # for each child, see if that child is a parent as well
+      #testloc = Location.last
+      # testloc = Location.last
+      # puts "testloc: #{testloc.to_json}"
+      # children = testloc.children if testloc.children
+      # return if children.nil? || testloc.parent.nil?
+      # parents = testloc.all_parents
+      # children.each do |child|
+      #   if parents.include?(child)
+      #     puts "\n may_not_be_a_parent_in_child_hierarchy"
+      #     errors.add(:parent, "Child location may not be a parent at the same time")
+      #   end
+      # end
     end
-  end
 
-  def child_may_not_be_self
-    errors.add(:children, "Can't contain self") if children.include?(self)
-  end
-  
-  def parent_may_not_be_venue
-    errors.add(:parent, "Can't be a Venue") if !parent.nil? && parent.is_a?(Venue)
-  end
+    def parent_may_not_be_a_circular_reference
+      if (self.parent == self) || (!(self.parent == nil) && (self.parent.parent == self))
+        errors.add(:parent, "Can't be self")
+      end
+    end
+
+    def child_may_not_be_self
+      errors.add(:children, "Can't contain self") if children.include?(self)
+    end
+    
+    def parent_may_not_be_venue
+      errors.add(:parent, "Can't be a Venue") if !parent.nil? && parent.is_a?(Venue)
+    end
 end
