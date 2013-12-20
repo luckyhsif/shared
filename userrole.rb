@@ -17,6 +17,11 @@ class Userrole < ActiveRecord::Base
     ur.first
   end
 
+  def allocated_locations
+    resps = Responsibility.where("user_id=? AND role_id=?", self.user.id, self.role.id)
+    locs = resps.map { |resp| resp.location }
+  end
+
   def self.all_master_distributors(offset=0, limit=0)
     md_role_type = Role.find_by_name('Master Distributor')
     #master_roles = Userrole.where("role_id = ?", md_role_type.id)
