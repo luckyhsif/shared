@@ -13,7 +13,7 @@ class Location < ActiveRecord::Base
   has_many :dial_prefixes
   #has_and_belongs_to_many :users
 
-  default_scope order('name ASC')
+  default_scope { order('name ASC') }
 
   validate :parent_may_not_be_a_circular_reference, :child_may_not_be_self, 
             :parent_may_not_be_venue

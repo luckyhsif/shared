@@ -3,7 +3,8 @@ require_relative 'location'
 class Country < Location
 
   validate :may_not_have_a_parent
-  has_one :currency
+  belongs_to :currency
+  has_many :users
 
   def self.list(offset=0, limit=0)
     total_countries = Country.all.count
