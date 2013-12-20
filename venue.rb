@@ -13,8 +13,8 @@ class Venue < Location
                                        :message => "Longitude must be between -180.0 and 180.0"
   validate :may_not_have_children
   
-  def account(name, currency = Account::DEFAULT_CURRENCY)
-    return self.accounts.where(name: name.to_s, currency: currency.to_s).first_or_create
+  def account(name, currency = Currency.default)
+    return self.accounts.where(name: name.to_s, currency: currency).first_or_create
   end
 
   def players(offset=0, limit=0)

@@ -13,13 +13,14 @@ class User < ActiveRecord::Base
   has_many :logs, class_name: 'ISoftbetLog'
   has_many :gameplays
   has_many :games, through: :gameplays
-  has_many :accounts, foreign_key: :owner_id, dependent: :destroy
+  # has_many :accounts, foreign_key: :owner_id, dependent: :destroy
   has_many :deposits
   has_many :withdrawals
   has_many :accepted_bonuses, class_name: 'AcceptedBonus'
-  has_one :currency
+  belongs_to :currency
+  belongs_to :country
 
-  default_scope order('name ASC')
+  default_scope { order('name ASC') }
 
   email_regex = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i
 
