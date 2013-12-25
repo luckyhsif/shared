@@ -112,6 +112,19 @@ end
     self.parent == nil
   end
 
+  def country
+    case self.type
+    when 'Country'
+      nil
+    when 'MasterRegion'
+      self.parent
+    when 'Region'
+      self.parent.parent
+    when 'Venue'
+      self.parent.parent.parent
+    end      
+  end
+
   def descendant_venues
     return nil if self.children == nil
     all_children = []
