@@ -40,7 +40,7 @@ class Player < User
     puts "todo"
   end
 
-  def deposit_cash(amount, opts = {})
+  def deposit_cash2(amount, opts = {})
     raise ArgumentError, "Expected an integer amount" unless amount.is_a? Integer
     raise ArgumentError, "Expected an reference" if opts[:reference].nil?
     raise ArgumentError, "Expected the reference to be a TxId" unless opts[:reference].is_a? TxId
@@ -58,6 +58,21 @@ class Player < User
       v_acc = self.venue.account(:wallet, currency)
       entries << LedgerEntry.create!(account: v_acc, debit: amount, currency: self.currency, note: note)
       entries << LedgerEntry.create!(account: my_acc, credit: amount, currency: self.currency, note: note)
+      Interaction.create!(note: note, entries: entries, reference: opts[:reference])
+    end
+  end
+
+  def deposit_cash(amount, opts = {})
+    raise ArgumentError, "Expected an integer amount" unless amount.is_a? Integer
+    raise ArgumentError, "Expected an reference" if opts[:reference].nil?
+    raise ArgumentError, "Expected the reference to be a TxId" unless opts[:reference].is_a? TxId
+    note = 'cash deposit'
+    Interaction.transaction do |t|
+      players_wallet = self.account(:wallet, self.currency)
+      venues_cash = venue.account(:cash, self.currency)
+      entries = []
+      entries << LedgerEntry.create!(account: players_wallet, credit: amount, currency: self.currency, note: note)
+      entries << LedgerEntry.create!(account: venues_cash, debit: amount, currency: self.currency, note: note)
       Interaction.create!(note: note, entries: entries, reference: opts[:reference])
     end
   end

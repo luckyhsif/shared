@@ -13,7 +13,7 @@ class User < ActiveRecord::Base
   has_many :logs, class_name: 'ISoftbetLog'
   has_many :gameplays
   has_many :games, through: :gameplays
-  # has_many :accounts, foreign_key: :owner_id, dependent: :destroy
+  has_many :accounts, foreign_key: :owner_id, dependent: :destroy
   has_many :deposits
   has_many :withdrawals
   has_many :accepted_bonuses, class_name: 'AcceptedBonus'
