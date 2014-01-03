@@ -70,14 +70,6 @@ end
     return country.children
   end
   
-  # def self.agent_locations(country)
-  #   agent_locations = []
-  #   for rl in Location.regional_locations
-  #     agent_locations.push(*rl.children)
-  #   end
-  #   return agent_locations
-  # end
-
   def immediate_children(offset=0, limit=0)
     loc_ids = "SELECT Child.id FROM locations Child" \
       " WHERE Child.parent_id = #{self.id}"
@@ -160,6 +152,20 @@ end
       current = current.parent
     end
     return parents
+  end
+
+  def is_appropriate_location_for?(user)
+    case self.type
+    when 'Venue'
+      return false unless (user.is_employee? || user.is_agent?)
+    when 'Region'
+      return false unless user.is_regional_distributor?
+    when 'MasterRegion'
+      return false unless user.is_master_distributor?
+    when 'Country'
+      return false unless user.is_country_distributor?
+    end
+    return true
   end
 
   private

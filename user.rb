@@ -313,7 +313,8 @@ class User < ActiveRecord::Base
       " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
       " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
       " WHERE roles.id = #{agent_role_type.id}" \
-      " AND Agent.id = #{self.id}"
+      " AND Agent.id = #{self.id}" \
+      " AND Player.type = 'Player'"
     total = (User.find_by_sql [player_ids]).count
     calculated_offset = offset * limit
     sqlstr = "SELECT Player.* FROM responsibilities RE"  \
@@ -323,6 +324,7 @@ class User < ActiveRecord::Base
       " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
       " WHERE roles.id = #{agent_role_type.id}" \
       " AND Agent.id = #{self.id}" \
+      " AND Player.type = 'Player'" \
       " ORDER BY Player.name LIMIT #{limit} OFFSET #{calculated_offset}" 
     players = User.find_by_sql [sqlstr]
     results = [players, total]
