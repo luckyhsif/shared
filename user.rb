@@ -215,6 +215,37 @@ class User < ActiveRecord::Base
     return self.permissions
   end
 
+  def unused_permissions
+    used_permissions = self.permissions
+    puts "\nAllocated permissions:"
+    puts used_permissions.first.to_json
+    puts "Permissions count = #{used_permissions.count.to_s}"
+    used_permissions.each do |up|
+      puts "User name:"
+      puts up.user.name
+      puts "Permission name:"
+      puts up.permission_type.name
+    end
+    senior_role = self.most_senior_role
+    userrole = Userrole.find(self, senior_role) 
+    return nil if userrole.nil?
+    if senior_role.name = 'Country Distributor'
+      available_permissions = PermissionType.all
+    else
+      available_permissions = userrole.manager.permission_types
+    end
+    unused = [];
+
+    puts "\nAvailable permissions:"
+    available_permissions.each do |ap|
+      puts ap.name
+    end
+    available_permissions.each do |perm|
+      unused << perm unless used_permissions.include?(perm)
+    end
+    return unused
+  end
+
   def agent_of_employee
     employee_role_type = Role.find_by_name('Employee')
     rlist = Userrole.where("user_id=? AND role_id=?", self.id, employee_role_type.id)
