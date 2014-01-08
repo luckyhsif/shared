@@ -216,33 +216,23 @@ class User < ActiveRecord::Base
   end
 
   def unused_permissions
-    used_permissions = self.permissions
-    puts "\nAllocated permissions:"
-    puts used_permissions.first.to_json
-    puts "Permissions count = #{used_permissions.count.to_s}"
-    used_permissions.each do |up|
-      puts "User name:"
-      puts up.user.name
-      puts "Permission name:"
-      puts up.permission_type.name
-    end
+    # puts "Used permissions count = #{self.permissions.count}"
+    # puts "Used permissions size = #{self.permissions.size}"
+    # if self.permissions.count > 0
+    #   puts "used permissions: #{self.permissions.inspect}"
+    #   puts "First used permission: #{self.permissions.first.inspect}"
+    #   self.permissions.each do |up|
+    #     puts " - User name: #{up.user.name}"
+    #     puts " - Permission name: #{up.permission_type.name}"
+    #   end
+    # end
     senior_role = self.most_senior_role
     userrole = Userrole.find(self, senior_role) 
     return nil if userrole.nil?
-    if senior_role.name = 'Country Distributor'
-      available_permissions = PermissionType.all
-    else
-      available_permissions = userrole.manager.permission_types
-    end
-    unused = [];
-
-    puts "\nAvailable permissions:"
-    available_permissions.each do |ap|
-      puts ap.name
-    end
-    available_permissions.each do |perm|
-      unused << perm unless used_permissions.include?(perm)
-    end
+    available_permission_types = (senior_role.name == 'Country Distributor' ? PermissionType.all : userrole.manager.permission_types).to_a
+    # puts "Available permission types: #{available_permission_types.inspect}"
+    unused = available_permission_types - self.permissions.to_a.map {|perm| perm.permission_type }
+    # puts "Found unused #{unused.inspect}"
     return unused
   end
 
