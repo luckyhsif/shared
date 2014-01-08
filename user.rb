@@ -215,6 +215,27 @@ class User < ActiveRecord::Base
     return self.permissions
   end
 
+  def unused_permissions
+    # puts "Used permissions count = #{self.permissions.count}"
+    # puts "Used permissions size = #{self.permissions.size}"
+    # if self.permissions.count > 0
+    #   puts "used permissions: #{self.permissions.inspect}"
+    #   puts "First used permission: #{self.permissions.first.inspect}"
+    #   self.permissions.each do |up|
+    #     puts " - User name: #{up.user.name}"
+    #     puts " - Permission name: #{up.permission_type.name}"
+    #   end
+    # end
+    senior_role = self.most_senior_role
+    userrole = Userrole.find(self, senior_role) 
+    return nil if userrole.nil?
+    available_permission_types = (senior_role.name == 'Country Distributor' ? PermissionType.all : userrole.manager.permission_types).to_a
+    # puts "Available permission types: #{available_permission_types.inspect}"
+    unused = available_permission_types - self.permissions.to_a.map {|perm| perm.permission_type }
+    # puts "Found unused #{unused.inspect}"
+    return unused
+  end
+
   def agent_of_employee
     employee_role_type = Role.find_by_name('Employee')
     rlist = Userrole.where("user_id=? AND role_id=?", self.id, employee_role_type.id)
@@ -313,7 +334,8 @@ class User < ActiveRecord::Base
       " LEFT OUTER JOIN locations L ON RE.location_id = L.id" \
       " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
       " WHERE roles.id = #{agent_role_type.id}" \
-      " AND Agent.id = #{self.id}"
+      " AND Agent.id = #{self.id}" \
+      " AND Player.type = 'Player'"
     total = (User.find_by_sql [player_ids]).count
     calculated_offset = offset * limit
     sqlstr = "SELECT Player.* FROM responsibilities RE"  \
@@ -323,6 +345,7 @@ class User < ActiveRecord::Base
       " LEFT OUTER JOIN users Player ON Player.venue_id = L.id" \
       " WHERE roles.id = #{agent_role_type.id}" \
       " AND Agent.id = #{self.id}" \
+      " AND Player.type = 'Player'" \
       " ORDER BY Player.name LIMIT #{limit} OFFSET #{calculated_offset}" 
     players = User.find_by_sql [sqlstr]
     results = [players, total]
