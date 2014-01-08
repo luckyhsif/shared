@@ -215,25 +215,32 @@ class User < ActiveRecord::Base
     return self.permissions
   end
 
-  def unused_permissions
-    # puts "Used permissions count = #{self.permissions.count}"
-    # puts "Used permissions size = #{self.permissions.size}"
-    # if self.permissions.count > 0
-    #   puts "used permissions: #{self.permissions.inspect}"
-    #   puts "First used permission: #{self.permissions.first.inspect}"
-    #   self.permissions.each do |up|
-    #     puts " - User name: #{up.user.name}"
-    #     puts " - Permission name: #{up.permission_type.name}"
-    #   end
-    # end
+  def unused_permission_types
     senior_role = self.most_senior_role
     userrole = Userrole.find(self, senior_role) 
     return nil if userrole.nil?
-    available_permission_types = (senior_role.name == 'Country Distributor' ? PermissionType.all : userrole.manager.permission_types).to_a
-    # puts "Available permission types: #{available_permission_types.inspect}"
+    available_permission_types = []
+    if senior_role.name == 'Country Distributor' 
+      available_permission_types = PermissionType.all.to_a
+    else
+      return nil if userrole.manager.permissions.nil?
+      available_permission_types = userrole.manager.permissions.to_a.map { |perm| perm.permission_type }
+    end
     unused = available_permission_types - self.permissions.to_a.map {|perm| perm.permission_type }
-    # puts "Found unused #{unused.inspect}"
-    return unused
+  end
+
+  def unused_permissions
+    # Since this method returns the permissions of the user's manager, 
+    #  it cannot be used for country distributors
+    senior_role = self.most_senior_role
+    return nil if senior_role.name == 'Country Distributor'
+    userrole = Userrole.find(self, senior_role) 
+    return nil if userrole.nil? || userrole.manager.permissions.nil? 
+    used_perm_types = self.permissions.to_a.map {|perm| perm.permission_type }
+    manager_perm_types = userrole.manager.permissions.to_a.map { |perm| perm.permission_type }
+    unused_perms = []
+    userrole.manager.permissions.each.map { |ump| unused_perms << ump unless used_perm_types.include?(ump.permission_type) }
+    return unused_perms
   end
 
   def agent_of_employee

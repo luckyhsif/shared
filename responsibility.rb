@@ -9,6 +9,11 @@ class Responsibility < ActiveRecord::Base
     resps.first
   end
 
+  def self.can_be_removed?(userid, locid)
+    resp = self.find_responsibility_for_location(userid, locid)
+    resp.can_be_removed?
+  end
+
   def can_be_removed?
     return true if self.user.is_employee?
     if self.user.is_agent?
