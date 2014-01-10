@@ -28,6 +28,7 @@ class Player < User
     return self.accounts.where(name: name.to_s, currency: currency).first_or_create
   end
 
+  # TODO: balance should be self.account(:wallet).balance + self.account(:gaming).balance
   def balance(name = 'wallet', currency = Currency.default)
     return account(name, currency).balance
   end
