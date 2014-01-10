@@ -38,7 +38,11 @@ class User < ActiveRecord::Base
             {count: 5, user_type: 'MasterDistributor'},
             {count: 6, user_type: 'CountryDistributor'},
             {count: 7, user_type: 'Staff'}]
-          
+
+  def credential(name)
+    return self.credentials.where(name: name.to_s).first_or_create
+  end
+
   def self.search(search)
     users = find_by_sql ["SELECT * FROM users WHERE name LIKE ? ORDER BY users.name ASC", "%#{search}%"]
   end
