@@ -98,6 +98,10 @@ class Player < User
       Interaction.create!(note: note, entries: entries, reference: opts[:reference])
     end
   end
+
+  def places_bet(amount, currency = Account::DEFAULT_CURRENCY)
+    note = 'player places bet'
+  end
   
   def loses_game(amount, currency = Account::DEFAULT_CURRENCY)
     note = 'player lost game'

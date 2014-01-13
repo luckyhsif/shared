@@ -34,6 +34,22 @@ class Withdrawal < Interaction
   belongs_to :user
 end
 
+class Bet < Interaction
+  belongs_to :user
+end
+
+class Winning < Interaction
+  belongs_to :user
+end
+
+class Cancellation < Interaction
+  belongs_to :user
+end
+
+class GameEnd < Interaction
+  belongs_to :user
+end
+
 class AcceptedBonus < Interaction
   belongs_to :user
   belongs_to :bonus

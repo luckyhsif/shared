@@ -7,7 +7,7 @@ class User < ActiveRecord::Base
   has_many :locations, through: :responsibilities
   has_many :messages, foreign_key: :sender_id
   has_many :userroles, foreign_key: :user_id
-  has_many :roles, through: :userroles
+  #has_many :roles, through: :userroles
   has_many :credentials
   has_many :txids, class_name: 'TxId'
   has_many :logs, class_name: 'ISoftbetLog'
