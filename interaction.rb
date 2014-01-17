@@ -46,7 +46,7 @@ class Cancellation < Interaction
   belongs_to :user
 end
 
-class GameEnd < Interaction
+class SessionEnd < Interaction
   belongs_to :user
 end
 

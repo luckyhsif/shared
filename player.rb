@@ -41,7 +41,7 @@ class Player < User
     puts "todo"
   end
 
-  def deposit_cash2(amount, opts = {})
+  def deposit_cash(amount, opts = {})
     raise ArgumentError, "Expected an integer amount" unless amount.is_a? Integer
     raise ArgumentError, "Expected an reference" if opts[:reference].nil?
     raise ArgumentError, "Expected the reference to be a TxId" unless opts[:reference].is_a? TxId
@@ -63,7 +63,7 @@ class Player < User
     end
   end
 
-  def deposit_cash(amount, opts = {})
+  def deposit_cash3(amount, opts = {})
     raise ArgumentError, "Expected an integer amount" unless amount.is_a? Integer
     raise ArgumentError, "Expected an reference" if opts[:reference].nil?
     raise ArgumentError, "Expected the reference to be a TxId" unless opts[:reference].is_a? TxId
@@ -78,7 +78,7 @@ class Player < User
     end
   end
 
-  def withdraw_cash(amount, currency = Account::DEFAULT_CURRENCY)
+  def withdraw_cash(amount, opts = {})
     raise ArgumentError, "Expected an integer amount" unless amount.is_a? Integer
     raise ArgumentError, "Expected an reference" if opts[:reference].nil?
     raise ArgumentError, "Expected the reference to be a TxId" unless opts[:reference].is_a? TxId
@@ -89,31 +89,51 @@ class Player < User
       my_acc = self.account(:cash, currency)
       v_acc = self.venue.account(:cash, currency)
       entries = []
-      entries << LedgerEntry.create!(account: v_acc, debit: amount, currency: currency, note: note)
-      entries << LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: v_acc, debit: amount, currency: self.currency, note: note)
+      entries << LedgerEntry.create!(account: my_acc, credit: amount, currency: self.currency, note: note)
       my_acc = self.account(:wallet, currency)
       v_acc = self.venue.account(:wallet, currency)
+      entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: self.currency, note: note)
+      entries << LedgerEntry.create!(account: v_acc, credit: amount, currency: self.currency, note: note)
+      Interaction.create!(note: note, entries: entries, reference: opts[:reference])
+    end
+  end
+
+  def places_bet(amount, opts = {})
+    note = 'player placed bet'
+    Interaction.transaction do |t|
+      my_acc = self.account(:wallet, currency)
+      v_acc = self.venue.account(:in_gaming, currency)
+      entries = []
       entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
       entries << LedgerEntry.create!(account: v_acc, credit: amount, currency: currency, note: note)
       Interaction.create!(note: note, entries: entries, reference: opts[:reference])
     end
   end
 
-  def places_bet(amount, currency = Account::DEFAULT_CURRENCY)
-    note = 'player places bet'
-  end
-  
-  def loses_game(amount, currency = Account::DEFAULT_CURRENCY)
-    note = 'player lost game'
+  def cancels_bet(amount, opts = {})
+    note = 'player cancels bet'
     Interaction.transaction do |t|
       my_acc = self.account(:wallet, currency)
-      v_acc = self.venue.account(:wallet, currency)
-      entries = []        
-      entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
-      entries << LedgerEntry.create!(account: v_acc, credit: amount, currency: currency, note: note)
-      Interaction.create!(note: note, entries: entries)
+      v_acc = self.venue.account(:in_gaming, currency)
+      entries = []
+      entries << LedgerEntry.create!(account: my_acc, credit: amount, currency: currency, note: note)
+      entries << LedgerEntry.create!(account: v_acc, debit: amount, currency: currency, note: note)
+      Interaction.create!(note: note, entries: entries, reference: opts[:reference])
     end
   end
+  
+  # def loses_game(amount, opts = {})
+  #   note = 'player lost game'
+  #   Interaction.transaction do |t|
+  #     my_acc = self.account(:wallet, currency)
+  #     v_acc = self.venue.account(:wallet, currency)
+  #     entries = []        
+  #     entries << LedgerEntry.create!(account: my_acc, debit: amount, currency: currency, note: note)
+  #     entries << LedgerEntry.create!(account: v_acc, credit: amount, currency: currency, note: note)
+  #     Interaction.create!(note: note, entries: entries)
+  #   end
+  # end
     
   def wins_game(amount, currency = Account::DEFAULT_CURRENCY)
     note = 'player won game'
