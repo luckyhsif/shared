@@ -47,6 +47,13 @@ class User < ActiveRecord::Base
     users = find_by_sql ["SELECT * FROM users WHERE name LIKE ? ORDER BY users.name ASC", "%#{search}%"]
   end
 
+  def self.search_by_partial_name(search)
+    sql = "SELECT * FROM users"
+    sql += " WHERE firstname LIKE ? OR name LIKE ? "
+    sql += " ORDER BY users.firstname ASC, users.name ASC"
+    users = find_by_sql [sql, "%#{search}%", "%#{search}%"]
+  end
+
   def user_roles
     urs = Userrole.where("user_id=?", self.id)
   end
