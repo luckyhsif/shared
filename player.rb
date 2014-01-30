@@ -24,6 +24,14 @@ class Player < User
     return self.agent_venues.include?(venue)
   end
 
+  def balance_formatted
+    return self.currency.to_s(self.balance)
+  end
+
+  def amount_formatted(amount)
+    return self.currency.to_s(amount)
+  end
+
   def account(name, currency = Currency.default)
     return self.accounts.where(name: name.to_s, currency: currency).first_or_create
   end
@@ -45,9 +53,6 @@ class Player < User
     raise ArgumentError, "Expected an integer amount" unless amount.is_a? Integer
     raise ArgumentError, "Expected an reference" if opts[:reference].nil?
     raise ArgumentError, "Expected the reference to be a TxId" unless opts[:reference].is_a? TxId
-    
-    # who is requesting the action? employees or agents and do they have permission to
-    # let the player deposit cash?
     note = 'cash deposit'
     Interaction.transaction do |t|
       my_acc = self.account(:cash, self.currency)
@@ -82,8 +87,6 @@ class Player < User
     raise ArgumentError, "Expected an integer amount" unless amount.is_a? Integer
     raise ArgumentError, "Expected an reference" if opts[:reference].nil?
     raise ArgumentError, "Expected the reference to be a TxId" unless opts[:reference].is_a? TxId
-    # who is requesting the action? employees or agents and do they have permission to
-    # let the player withdraw cash?
     note = 'cash withdrawal'
     Interaction.transaction do |t|
       my_acc = self.account(:cash, currency)

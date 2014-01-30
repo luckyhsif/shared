@@ -111,6 +111,14 @@ class User < ActiveRecord::Base
     users.sort! { |a,b| a.name <=> b.name }
   end
 
+  def full_name
+    if self.is_a? Player
+      self.firstname + ' ' + self.name
+    else
+      self.name
+    end
+  end
+
   def user_role_types_sorted
     urtypes = self.user_roles.map { |urole| urole.role }
     urtypes.sort! { |a,b| a.level <=> b.level }
