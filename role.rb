@@ -26,7 +26,7 @@ class Role < ActiveRecord::Base
 
   def next_senior_role_type
     higher_level = self.level + 1
-    return nil if lower_level > 7
+    return nil if higher_level > 7
     role = Role.find_by_sql ["SELECT * FROM roles WHERE roles.level = ?", higher_level]
     return role.first
   end

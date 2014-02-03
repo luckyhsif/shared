@@ -98,6 +98,29 @@ class Userrole < ActiveRecord::Base
     results = [employee_roles, total]
   end
 
+  def country_distributor_subordinates(offset=0, limit=0)
+    #puts "\nEntering country_distributor_subordinates"
+    cd_role_type = Role.find_by_name('Country Distributor')
+    country_roles_ids = "SELECT U.id FROM userroles UR" \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{cd_role_type.id}" \
+      " AND UR.manager_id = #{self.user.id}"
+    total = (Userrole.find_by_sql [country_roles_ids]).count
+    calculated_offset = offset * limit
+    sqlstr = "SELECT UR.* FROM userroles UR"  \
+      " LEFT OUTER JOIN users U ON UR.user_id = U.id" \
+      " LEFT OUTER JOIN roles ON UR.role_id = roles.id" \
+      " LEFT OUTER JOIN users Manager ON UR.manager_id = Manager.id" \
+      " WHERE roles.id = #{cd_role_type.id}" \
+      " AND Manager.id = #{self.user.id}" \
+      " ORDER BY U.name LIMIT #{limit} OFFSET #{calculated_offset}" 
+    country_roles = Userrole.find_by_sql [sqlstr]
+    results = [country_roles, total]
+  end
+
+
   def master_distributor_subordinates(offset=0, limit=0)
     #puts "\nEntering master_distributor_subordinates"
     md_role_type = Role.find_by_name('Master Distributor')
