@@ -5,6 +5,8 @@ class Country < Location
   validate :may_not_have_a_parent
   belongs_to :currency
   has_many :users
+  has_many :subnational_divisions
+  has_many :dial_prefixes
 
   def self.list(offset=0, limit=0)
     total_countries = Country.all.count
